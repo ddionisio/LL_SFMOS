@@ -12,6 +12,10 @@
 *.DotSettings
 *.userprefs
 
+lol-template/
+LoL/
+LoL.meta
+
 NGUI/
 TK2DROOT/
 PlayMaker/

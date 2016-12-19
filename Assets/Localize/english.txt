@@ -1,0 +1,9 @@
+{
+    "items": [
+        {
+            "key": "version",
+            "text": "0.0.1",
+            "param": []
+        }
+    ]
+}
