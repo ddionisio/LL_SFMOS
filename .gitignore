@@ -13,8 +13,11 @@
 *.userprefs
 
 lol-template/
+lol-template.meta
 LoL/
 LoL.meta
+
+Build-WebGL/
 
 NGUI/
 TK2DROOT/
