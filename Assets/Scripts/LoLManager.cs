@@ -60,10 +60,17 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
         LOLSDK.Instance.SubmitProgress(0, 0, _progressMax);
     }
 
-    public void Progress() {
+    public void ApplyScore(int score) {
+        mCurScore = score;
+
+        LOLSDK.Instance.SubmitProgress(mCurScore, mCurProgress, _progressMax);
+    }
+
+    public void Progress(int score) {
         if(mCurProgress >= _progressMax)
             return;
 
+        mCurScore = score;
         mCurProgress++;
                 
         LOLSDK.Instance.SubmitProgress(mCurScore, mCurProgress, _progressMax);
