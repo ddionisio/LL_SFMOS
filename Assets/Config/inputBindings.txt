@@ -1,0 +1,1 @@
+{"items":[{"action":0,"control":0,"deadZone":0.10000000149011612,"forceRaw":false,"keys":[{"player":0,"input":"","code":323,"map":-1,"invert":false,"axis":0,"index":0}]},{"action":1,"control":0,"deadZone":0.10000000149011612,"forceRaw":false,"keys":[{"player":0,"input":"","code":27,"map":-1,"invert":false,"axis":0,"index":0}]}]}
