@@ -9,6 +9,11 @@
             "key": "title_options",
             "text": "OPTIONS",
             "param": []
+        },
+        {
+            "key": "title_lose",
+            "text": "LOSE",
+            "param": []
         }
     ]
 }

@@ -7,6 +7,8 @@ using UnityEngine;
 public class ModalOptions : M8.UIModal.Controller, IPush, IPop {
     void IPush.Push(M8.GenericParams parms) {
         M8.SceneManager.instance.Pause();
+
+        //check params for mode: none (default), mission select (show "quit to title"), game (show "restart", "return to mission select")
     }
 
     void IPop.Pop() {

@@ -13,33 +13,15 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
     string _gameID = "com.daviddionisio.LoLGame";
     [SerializeField]
     int _progressMax;
-
-    private int mCurScore;
+    
     private int mCurProgress;
 
     public string gameID { get { return _gameID; } }
 
     public int progressMax { get { return _progressMax; } }
-
-    public int curScore {
-        get { return mCurScore; }
-        set {
-            if(mCurScore != value) {
-                var prevScore = mCurScore;
-
-                mCurScore = value;
-
-                var delta = mCurScore - prevScore;
-
-                if(scoreChangedCallback != null)
-                    scoreChangedCallback(this, delta);
-            }
-        }
-    }
-
+    
     public int curPogress { get { return mCurProgress; } }
-
-    public event OnChanged scoreChangedCallback;
+    
     public event OnCallback progressCallback;
     public event OnCallback completeCallback;
 
@@ -54,27 +36,23 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
     }
 
     public void Restart() {
-        mCurScore = 0;
         mCurProgress = 0;
 
         LOLSDK.Instance.SubmitProgress(0, 0, _progressMax);
     }
 
     public void ApplyScore(int score) {
-        mCurScore = score;
-
-        LOLSDK.Instance.SubmitProgress(mCurScore, mCurProgress, _progressMax);
+        LOLSDK.Instance.SubmitProgress(score, mCurProgress, _progressMax);
     }
 
     public void Progress(int score) {
         if(mCurProgress >= _progressMax)
             return;
-
-        mCurScore = score;
-        mCurProgress++;
-                
-        LOLSDK.Instance.SubmitProgress(mCurScore, mCurProgress, _progressMax);
         
+        mCurProgress++;
+
+        ApplyScore(score);
+
         if(progressCallback != null)
             progressCallback(this);
     }
