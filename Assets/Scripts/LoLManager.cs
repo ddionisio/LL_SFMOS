@@ -13,14 +13,14 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
     string _gameID = "com.daviddionisio.LoLGame";
     [SerializeField]
     int _progressMax;
-    
-    private int mCurProgress;
 
+    private int mCurProgress;
+    
     public string gameID { get { return _gameID; } }
 
     public int progressMax { get { return _progressMax; } }
-    
-    public int curPogress { get { return mCurProgress; } }
+
+    public int curProgress { get { return mCurProgress; } }
     
     public event OnCallback progressCallback;
     public event OnCallback completeCallback;
@@ -45,11 +45,9 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
         LOLSDK.Instance.SubmitProgress(score, mCurProgress, _progressMax);
     }
 
-    public void Progress(int score) {
-        if(mCurProgress >= _progressMax)
-            return;
-        
-        mCurProgress++;
+    public void ApplyProgress(int progress, int score) {
+
+        mCurProgress = Mathf.Clamp(progress, 0, _progressMax);
 
         ApplyScore(score);
 

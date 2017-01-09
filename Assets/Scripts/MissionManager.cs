@@ -86,6 +86,20 @@ public class MissionManager : M8.SingletonBehaviour<MissionManager> {
         }
     }
 
+    public int totalComplete {
+        get {
+            int count = 0;
+            for(int i = 0; i < _missions.Length; i++) {
+                if(_missions[i].completed)
+                    count++;
+                if(_missions[i].completedQuiz)
+                    count++;
+            }
+
+            return count;
+        }
+    }
+
     public void Begin(int mission) {
         mCurMission = mission;
 
@@ -116,27 +130,17 @@ public class MissionManager : M8.SingletonBehaviour<MissionManager> {
     public void Complete(int score) {
         var _mission = curMission;
 
-        bool wasCompleted = _mission.completed;
-
         _mission.Complete(score);
 
-        if(wasCompleted)
-            LoLManager.instance.ApplyScore(totalScore);
-        else
-            LoLManager.instance.Progress(totalScore);
+        LoLManager.instance.ApplyProgress(totalComplete, totalScore);
     }
 
     public void CompleteQuiz(int correctCount) {
         var _mission = curMission;
 
-        bool wasCompleted = _mission.completedQuiz;
-
         _mission.CompleteQuiz(correctCount*_quizScorePerAnswer);
 
-        if(wasCompleted)
-            LoLManager.instance.ApplyScore(totalScore);
-        else
-            LoLManager.instance.Progress(totalScore);
+        LoLManager.instance.ApplyProgress(totalComplete, totalScore);
     }
     
     protected override void OnInstanceDeinit() {
