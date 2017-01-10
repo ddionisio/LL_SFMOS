@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class MissionController : M8.SingletonBehaviour<MissionController> {
 
-    public delegate void OnValueChangeCallback(int prev, int cur);
-
+    public delegate void OnValueChangeCallback(int cur, int prev);
+    
     public event OnValueChangeCallback scoreChangeCallback;
 
     private int mCurScore;
-
+    private M8.StatsController mStats;
+        
     public int score {
         get { return mCurScore; }
 
@@ -19,11 +20,12 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
                 mCurScore = value;
 
                 if(scoreChangeCallback != null)
-                    scoreChangeCallback(prev, mCurScore);
+                    scoreChangeCallback(mCurScore, prev);
             }
         }
     }
 
+    public M8.StatsController stats { get { return mStats; } }
 
     public void ProcessVictory() {
         MissionManager.instance.Complete(mCurScore);
@@ -40,6 +42,6 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     }
 
     protected override void OnInstanceInit() {
-        
+        mStats = GetComponent<M8.StatsController>();
     }
 }

@@ -8,6 +8,7 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
     public string poolGroup;
     public string entityRef;
 
+    [Header("Info")]
     public int maxSpawn;
 
     public float spawnStartDelay;
@@ -19,6 +20,10 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
     public bool spawnIgnoreRotation;
 
     public bool activeAtStart;
+
+    [Header("Data")]
+
+    public float impulse = 0f; //set to 0 to ignore
 
     private bool mIsSpawning;
     private Coroutine mSpawningRout;
