@@ -18,6 +18,6 @@ public class MissionQuizController : M8.SingletonBehaviour<MissionQuizController
     }
 
     protected override void OnInstanceInit() {
-        
+        mCorrectCount = 0;
     }
 }
