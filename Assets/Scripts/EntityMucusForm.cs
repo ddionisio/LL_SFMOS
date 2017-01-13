@@ -2,15 +2,39 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EntityMucusForm : MonoBehaviour {
+public class EntityMucusForm : M8.EntityBase {
+    public void Launch(Vector2 dir, float force) {
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    }
+
+    protected override void OnDespawned() {
+        //reset stuff here
+    }
+
+    protected override void OnSpawned(M8.GenericParams parms) {
+        //populate data/state for ai, player control, etc.
+    }
+
+    protected override void OnDestroy() {
+        //dealloc here
+
+        base.OnDestroy();
+    }
+
+    protected override void SpawnStart() {
+        //start ai, player control, etc
+    }
+
+    protected override void Awake() {
+        base.Awake();
+
+        //initialize data/variables
+    }
+
+    // Use this for initialization
+    protected override void Start() {
+        base.Start();
+
+        //initialize variables from other sources (for communicating with managers, etc.)
+    }
 }

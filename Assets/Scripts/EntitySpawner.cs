@@ -97,6 +97,13 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
         }
     }
 
+    public void ApplyParam(string arg, object val) {
+        if(val != null)
+            mSpawnParms[arg] = val;
+        else
+            mSpawnParms.Remove(arg);
+    }
+
     void OnEnable() {
         if(mIsSpawning) {
             if(mSpawningRout == null)

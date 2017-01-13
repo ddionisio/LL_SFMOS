@@ -10,6 +10,7 @@ public enum EntityState {
 
     //mucus
     Gather,
+    Gathered,
 
     //mucus form
     Hold,

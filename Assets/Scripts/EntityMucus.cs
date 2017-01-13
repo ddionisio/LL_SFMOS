@@ -3,6 +3,35 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EntityMucus : M8.EntityBase {
+
+    private Transform mGatherTo;
+
+    /// <summary>
+    /// Set gather state, if towards != null, else revert state to idle
+    /// </summary>
+    public void SetGather(Transform towards) {
+        if(towards) {
+            state = (int)EntityState.Gather;
+        }
+        else {
+            state = (int)EntityState.Normal;
+        }
+    }
+
+    /// <summary>
+    /// Called by MucusForm once it has processed
+    /// </summary>
+    public void Gathered() {
+        state = (int)EntityState.Gathered;
+    }
+
+    protected override void StateChanged() {
+        switch((EntityState)state) {
+            case EntityState.Normal:
+                break;
+        }
+    }
+
     protected override void OnDespawned() {
         //reset stuff here
     }
@@ -19,6 +48,7 @@ public class EntityMucus : M8.EntityBase {
 
     protected override void SpawnStart() {
         //start ai, player control, etc
+        state = (int)EntityState.Normal;
     }
 
     protected override void Awake() {
