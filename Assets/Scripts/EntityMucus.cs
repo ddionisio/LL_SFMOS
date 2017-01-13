@@ -3,13 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EntityMucus : M8.EntityBase {
+    public Rigidbody2D body;
+
+    public float gatherSpeed;
 
     private Transform mGatherTo;
+
+    private Coroutine mRout;
 
     /// <summary>
     /// Set gather state, if towards != null, else revert state to idle
     /// </summary>
     public void SetGather(Transform towards) {
+        mGatherTo = towards;
+
         if(towards) {
             state = (int)EntityState.Gather;
         }
@@ -17,23 +24,50 @@ public class EntityMucus : M8.EntityBase {
             state = (int)EntityState.Normal;
         }
     }
-
-    /// <summary>
-    /// Called by MucusForm once it has processed
-    /// </summary>
-    public void Gathered() {
-        state = (int)EntityState.Gathered;
-    }
-
+    
     protected override void StateChanged() {
+        if(mRout != null) {
+            StopCoroutine(mRout);
+            mRout = null;
+        }
+
+        switch((EntityState)prevState) {
+            case EntityState.Gather:
+                mGatherTo = null;
+                break;
+
+            case EntityState.Gathered:
+                gameObject.SetActive(true);
+                break;
+        }
+        
         switch((EntityState)state) {
             case EntityState.Normal:
+                body.simulated = true;
+                break;
+
+            case EntityState.Gather:
+                body.simulated = false;
+
+                mRout = StartCoroutine(DoGather());
+                break;
+
+            case EntityState.Gathered:                
+                gameObject.SetActive(false);
                 break;
         }
     }
 
     protected override void OnDespawned() {
         //reset stuff here
+        if(mRout != null) {
+            StopCoroutine(mRout);
+            mRout = null;
+        }
+
+        mGatherTo = null;
+        
+        body.simulated = true;
     }
 
     protected override void OnSpawned(M8.GenericParams parms) {
@@ -62,5 +96,44 @@ public class EntityMucus : M8.EntityBase {
         base.Start();
 
         //initialize variables from other sources (for communicating with managers, etc.)
+    }
+
+    IEnumerator DoGather() {
+        body.velocity = Vector2.zero;
+        body.angularVelocity = 0f;
+
+        bool active = true;        
+        float delay = 0f;
+
+        if(mGatherTo) {
+            Vector2 startPos = transform.position;
+            Vector2 endPos = mGatherTo.position;
+
+            float dist = (endPos - startPos).magnitude;
+
+            if(dist > 0f) {
+                delay = dist/gatherSpeed;
+            }
+            else
+                active = false;
+        }
+
+        Vector2 curVel = Vector2.zero;
+        float curTime = 0f;
+
+        while(active) {
+            curTime += Time.deltaTime;
+
+            Vector2 curPos = transform.position;
+            Vector2 endPos = mGatherTo.position;
+
+            transform.position = Vector2.SmoothDamp(curPos, endPos, ref curVel, delay, float.MaxValue, Time.deltaTime);
+
+            yield return null;
+
+            active = curTime < delay && mGatherTo;
+        }
+
+        state = (int)EntityState.Gathered;
     }
 }

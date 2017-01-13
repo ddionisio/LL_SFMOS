@@ -13,6 +13,5 @@ public enum EntityState {
     Gathered,
 
     //mucus form
-    Hold,
-    Release
+    Launch
 }

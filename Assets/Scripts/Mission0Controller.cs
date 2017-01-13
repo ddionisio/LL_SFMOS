@@ -58,36 +58,36 @@ public class Mission0Controller : MissionController {
     }
 
     void OnMucusFieldInputDrag(MucusGatherInputField input) {
-        switch(input.currentAreaType) {
-            case MucusGatherInputField.AreaType.Top:
-                if(mucusGather.isActive) {
-                    SetPointerActive(true);
-                    pointer.position = new Vector3(input.currentPosition.x, input.currentPosition.y, 0f);
-                }
-                break;
+        if(mucusGather.isActive) {
+            var pos = input.currentPosition;
 
-            case MucusGatherInputField.AreaType.Bottom:
-                input.ApplyCurrentToOrigin();
+            bool pointerActive = !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
 
-                if(mucusGather.isActive) {
-                    SetPointerActive(false);
-                }
-                else {
-                    mucusGather.Activate();
-                }
+            SetPointerActive(pointerActive);
 
-                mucusGather.transform.position = new Vector3(input.originPosition.x, input.originPosition.y, 0f);
-
-                break;
+            if(pointerActive) {
+                pointer.position = new Vector3(pos.x, pos.y, pointer.position.z);
+            }
         }
     }
 
     void OnMucusFieldInputUp(MucusGatherInputField input) {
         SetPointerActive(false);
 
-        var dir = new Vector2(0f, 0f);
-        var dist = 0f;
+        if(mucusGather.isActive) {
+            var pos = input.currentPosition;
 
-        mucusGather.Release(dir, dist);
+            bool pointerActive = !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
+
+            if(pointerActive) {
+                var dir = new Vector2(0f, 0f);
+                var dist = 0f;
+
+                mucusGather.Release(dir, dist);
+            }
+            else {
+                mucusGather.Cancel();
+            }
+        }
     }
 }
