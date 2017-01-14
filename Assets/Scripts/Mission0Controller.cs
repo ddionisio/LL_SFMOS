@@ -10,6 +10,8 @@ public class Mission0Controller : MissionController {
     public Transform pointer;
     public GameObject pointerGO;
 
+    public Bounds mucusFormBounds;
+
     private bool mIsPointerActive;
     
     protected override void OnInstanceDeinit() {
@@ -75,19 +77,32 @@ public class Mission0Controller : MissionController {
         SetPointerActive(false);
 
         if(mucusGather.isActive) {
-            var pos = input.currentPosition;
+            Vector2 pos = input.currentPosition;
 
             bool pointerActive = !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
 
             if(pointerActive) {
-                var dir = new Vector2(0f, 0f);
-                var dist = 0f;
+                Vector2 sPos = mucusGather.mucusFormSpawnAt.position;
+                
+                var dir = pos - sPos;
+                var dist = dir.magnitude;
+                if(dist > 0f)
+                    dir /= dist;
 
-                mucusGather.Release(dir, dist);
+                Debug.Log("launch dist: "+dist);
+
+                mucusGather.Release(dir, dist, mucusFormBounds);
             }
             else {
                 mucusGather.Cancel();
             }
         }
+    }
+
+    void OnDrawGizmos() {
+
+        Gizmos.color = Color.yellow;
+
+        Gizmos.DrawWireCube(mucusFormBounds.center, mucusFormBounds.size);
     }
 }

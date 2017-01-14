@@ -15,7 +15,19 @@ public class EntityMucusForm : M8.EntityBase {
 
     [Header("Growth")]
     public int growthMaxCount;
-    
+
+    [Header("Launch")]
+    public float launchForceMin;
+    public float launchForceMax;
+    public float launchForceImpulse;
+    public float launchForceMaxDistance;
+    public AnimationCurve launchForceCurve;
+    public float launchDuration;
+
+    public float launchForceGrowthDecayMinDelay = 3f;
+    public float launchForceGrowthDecayMaxDelay = 1f;
+    public AnimationCurve launchForceDecayCurve;
+
     public float radius {
         get {
             return mRadius;
@@ -40,6 +52,12 @@ public class EntityMucusForm : M8.EntityBase {
     private float mRadius = 0f;
     private int mCurGrowthCount = 0;
 
+    private Coroutine mRout;
+
+    private Vector2 mLaunchDir;
+    private float mLaunchForce;
+    private Bounds mLaunchBounds;
+
     public void Grow() {
         if(mCurGrowthCount < growthMaxCount) {
             mCurGrowthCount++;
@@ -51,15 +69,33 @@ public class EntityMucusForm : M8.EntityBase {
         }
     }
 
-    public void Launch(Vector2 dir, float force) {
+    public void Launch(Vector2 dir, float length, Bounds bounds) {
+        if(dir.x + dir.y == 0f) {
+            Cancel();
+            return;
+        }
 
+        mLaunchDir = dir;
+        mLaunchForce = Mathf.Lerp(launchForceMin, launchForceMax, GetLaunchForceScale(length));
+        mLaunchBounds = bounds;
+
+        state = (int)EntityState.Launch;
     }
 
     public void Cancel() {
         state = (int)EntityState.Dead;
     }
 
+    public float GetLaunchForceScale(float length) {
+        return Mathf.Clamp01(launchForceCurve.Evaluate(Mathf.Clamp01((length - radius)/launchForceMaxDistance)));
+    }
+
     protected override void StateChanged() {
+        if(mRout != null) {
+            StopCoroutine(mRout);
+            mRout = null;
+        }
+
         switch((EntityState)state) {
             case EntityState.Normal:
                 body.simulated = false;
@@ -67,6 +103,7 @@ public class EntityMucusForm : M8.EntityBase {
 
             case EntityState.Launch:
                 body.simulated = true;
+                mRout = StartCoroutine(DoLaunch());
                 break;
 
             case EntityState.Dead:
@@ -80,6 +117,11 @@ public class EntityMucusForm : M8.EntityBase {
 
     protected override void OnDespawned() {
         //reset stuff here
+        if(mRout != null) {
+            StopCoroutine(mRout);
+            mRout = null;
+        }
+
         radius = radiusStart;
 
         mCurGrowthCount = 0;
@@ -116,6 +158,30 @@ public class EntityMucusForm : M8.EntityBase {
         base.Start();
 
         //initialize variables from other sources (for communicating with managers, etc.)
+    }
+
+    IEnumerator DoLaunch() {
+        var wait = new WaitForFixedUpdate();
+
+        float decayDelay = Mathf.Lerp(launchForceGrowthDecayMinDelay, launchForceGrowthDecayMaxDelay, (float)mCurGrowthCount/growthMaxCount);
+
+        if(launchForceImpulse != 0f)
+            body.AddForce(mLaunchDir*launchForceImpulse, ForceMode2D.Impulse);
+
+        float curTime = 0f;
+        float forceScale = 1f;
+        while(curTime < launchDuration && mLaunchBounds.Contains(body.position)) {
+            body.AddForce(mLaunchDir*mLaunchForce*forceScale);
+
+            yield return wait;
+
+            curTime += Time.fixedDeltaTime;
+            forceScale = Mathf.Clamp01(launchForceDecayCurve.Evaluate(Mathf.Clamp01(curTime/decayDelay)));
+        }
+
+        mRout = null;
+
+        state = (int)EntityState.Dead;
     }
 
     void OnDrawGizmos() {

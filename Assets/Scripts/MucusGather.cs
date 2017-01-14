@@ -68,7 +68,7 @@ public class MucusGather : MonoBehaviour {
             gameObject.SetActive(false);
     }
 
-    public void Release(Vector2 dir, float dist) {
+    public void Release(Vector2 dir, float dist, Bounds bounds) {
         if(!mIsActive)
             return;
 
@@ -90,6 +90,7 @@ public class MucusGather : MonoBehaviour {
 
         //launch mucus form if available
         if(mSpawnedMucusForm) {
+            mSpawnedMucusForm.Launch(dir, dist, bounds);
             mSpawnedMucusForm = null;
         }
 
@@ -122,7 +123,7 @@ public class MucusGather : MonoBehaviour {
         Inactive();
     }
 
-    void OnTriggerEnter2D(Collider2D other) {        
+    void OnTriggerStay2D(Collider2D other) {        
         //check if we are full
         if(mSpawnedMucusForm && mSpawnedMucusForm.currentGrowthCount >= mSpawnedMucusForm.growthMaxCount)
             return;
@@ -167,8 +168,11 @@ public class MucusGather : MonoBehaviour {
     }
 
     void Grow() {
-        if(mSpawnedMucusForm)
+        if(mSpawnedMucusForm) {
             mSpawnedMucusForm.Grow();
+
+            Debug.Log("growth count: "+mSpawnedMucusForm.currentGrowthCount);
+        }
         else {
             //generate a new form
             Vector2 spawnPos = mucusFormSpawnAt.position;

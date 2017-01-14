@@ -17,33 +17,65 @@ public class EntitySpawnerAnimator : MonoBehaviour, IEntitySpawnerListener {
     [SerializeField]
     string _takeSpawn;
 
-    private int mTakeIdleInd;
-    private int mTakeSpawningInd;
-    private int mTakeSpawnInd;
+    private int mTakeIdleInd = -1;
+    private int mTakeSpawningInd = -1;
+    private int mTakeSpawnInd = -1;
 
     void Awake() {
-        mTakeIdleInd = animator.GetTakeIndex(_takeIdle);
-        mTakeSpawningInd = animator.GetTakeIndex(_takeSpawning);
-        mTakeSpawnInd = animator.GetTakeIndex(_takeSpawn);
+        if(animator) {
+            mTakeIdleInd = animator.GetTakeIndex(_takeIdle);
+            mTakeSpawningInd = animator.GetTakeIndex(_takeSpawning);
+            mTakeSpawnInd = animator.GetTakeIndex(_takeSpawn);
+        }
     }
 
     void IEntitySpawnerListener.OnSpawnStart() {
+        if(mTakeSpawningInd == -1)
+            return;
+
         animator.Play(mTakeSpawningInd);
     }
 
     void IEntitySpawnerListener.OnSpawnBegin() {
+        if(mTakeSpawnInd == -1)
+            return;
+
         animator.Play(mTakeSpawnInd);
     }
 
     bool IEntitySpawnerListener.OnSpawning() {
+        if(mTakeSpawnInd == -1)
+            return true;
+
         return animator.currentPlayingTakeIndex != mTakeSpawnInd || !animator.isPlaying;
     }
 
     void IEntitySpawnerListener.OnSpawnEnd() {
+        if(mTakeSpawningInd == -1)
+            return;
+
         animator.Play(mTakeSpawningInd);
     }
 
     void IEntitySpawnerListener.OnSpawnStop() {
+        if(mTakeIdleInd == -1)
+            return;
+
         animator.Play(mTakeIdleInd);
+    }
+
+    void IEntitySpawnerListener.OnSpawnFull(bool full) {
+        if(full) {
+            if(mTakeIdleInd == -1)
+                return;
+
+            animator.Play(mTakeIdleInd);
+        }
+        else {
+            if(mTakeSpawningInd == -1)
+                return;
+
+            animator.Play(mTakeSpawningInd);
+        }
     }
 }

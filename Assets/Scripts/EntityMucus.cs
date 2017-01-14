@@ -134,6 +134,8 @@ public class EntityMucus : M8.EntityBase {
             active = curTime < delay && mGatherTo;
         }
 
+        mRout = null;
+
         state = (int)EntityState.Gathered;
     }
 }

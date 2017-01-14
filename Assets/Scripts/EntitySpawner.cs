@@ -27,9 +27,14 @@ public interface IEntitySpawnerListener {
     void OnSpawnEnd();
 
     /// <summary>
-    /// Called when spawn is deactivated, or when we are full
+    /// Called when spawn is deactivated
     /// </summary>
     void OnSpawnStop();
+
+    /// <summary>
+    /// Called when spawn becomes full, then when we are no longer full
+    /// </summary>
+    void OnSpawnFull(bool full);
 }
 
 public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
@@ -42,6 +47,7 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
     public float spawnStartDelay;
     public float spawnDelay;
+    public float spawnFullDelay;
 
     public Transform spawnAt;  //Note: use up vector as dir param during spawn
     public Transform spawnTo;
@@ -72,10 +78,7 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
                 mIsSpawning = value;
 
                 if(mIsSpawning) {
-                    for(int i = 0; i < mListeners.Length; i++)
-                        mListeners[i].OnSpawnStart();
-
-                    if(mSpawningRout != null)
+                    if(mSpawningRout == null)
                         mSpawningRout = StartCoroutine(DoSpawning());
                 }
                 else {
@@ -140,10 +143,10 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
     // Use this for initialization
     void Start() {
+        GenerateInitialSpawns();
+
         if(activeAtStart)
             isSpawning = true;
-
-        GenerateInitialSpawns();
     }
 
     void GenerateInitialSpawns() {
@@ -160,50 +163,59 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
     IEnumerator DoSpawning() {
         var pool = PoolController.GetPool(poolGroup);
-
+        
         var wait = spawnDelay > 0f ? new WaitForSeconds(spawnDelay) : null;
+
+        for(int i = 0; i < mListeners.Length; i++)
+            mListeners[i].OnSpawnStart();
 
         yield return new WaitForSeconds(spawnStartDelay);
         
         while(mIsSpawning) {
             bool isFull = mSpawnedEntities.Count >= maxSpawn;
-            if(!isFull) {
-                //spawn begin
+            if(isFull) {
                 for(int i = 0; i < mListeners.Length; i++)
-                    mListeners[i].OnSpawnBegin();
+                    mListeners[i].OnSpawnFull(true);
 
-                //spawning
-                while(true) {
-                    int spawnReadyCount = 0;
-                    for(int i = 0; i < mListeners.Length; i++) {
-                        if(mListeners[i].OnSpawning())
-                            spawnReadyCount++;
-                    }
-
-                    if(spawnReadyCount >= mListeners.Length)
-                        break;
-
+                while(mSpawnedEntities.Count >= maxSpawn)
                     yield return null;
-                }
 
-                //spawn
-                var spawnPos = spawnAt ? spawnAt.position : transform.position; spawnPos.z = 0f;
-                var spawnRot = spawnIgnoreRotation ? Quaternion.identity : spawnAt ? spawnAt.rotation : transform.rotation;
+                //wait for a bit
+                yield return new WaitForSeconds(spawnFullDelay);
 
-                Spawn(pool, spawnPos, spawnRot, mSpawnParms);
-
-                isFull = mSpawnedEntities.Count >= maxSpawn;
-
-                //spawn end
-                if(isFull) {
-                    for(int i = 0; i < mListeners.Length; i++)
-                        mListeners[i].OnSpawnStop();
-                }
-                else {
-                    for(int i = 0; i < mListeners.Length; i++)
-                        mListeners[i].OnSpawnEnd();
-                }
+                for(int i = 0; i < mListeners.Length; i++)
+                    mListeners[i].OnSpawnFull(false);
             }
+
+            //spawn begin
+            for(int i = 0; i < mListeners.Length; i++)
+                mListeners[i].OnSpawnBegin();
+
+            //spawning
+            while(true) {
+                int spawnReadyCount = 0;
+                for(int i = 0; i < mListeners.Length; i++) {
+                    if(mListeners[i].OnSpawning())
+                        spawnReadyCount++;
+                }
+
+                if(spawnReadyCount >= mListeners.Length)
+                    break;
+
+                yield return null;
+            }
+
+            //spawn
+            var spawnPos = spawnAt ? spawnAt.position : transform.position; spawnPos.z = 0f;
+            var spawnRot = spawnIgnoreRotation ? Quaternion.identity : spawnAt ? spawnAt.rotation : transform.rotation;
+
+            Spawn(pool, spawnPos, spawnRot, mSpawnParms);
+
+            isFull = mSpawnedEntities.Count >= maxSpawn;
+
+            //spawn end
+            for(int i = 0; i < mListeners.Length; i++)
+                mListeners[i].OnSpawnEnd();
 
             yield return wait;
         }
