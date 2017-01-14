@@ -124,6 +124,9 @@ public class MucusGather : MonoBehaviour {
     }
 
     void OnTriggerStay2D(Collider2D other) {        
+        if(!other.CompareTag(Tags.mucus))
+            return;
+
         //check if we are full
         if(mSpawnedMucusForm && mSpawnedMucusForm.currentGrowthCount >= mSpawnedMucusForm.growthMaxCount)
             return;

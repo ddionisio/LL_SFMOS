@@ -7,9 +7,22 @@ public class EntityMucus : M8.EntityBase {
 
     public float gatherSpeed;
 
+    public float spawnImpulse;
+
+    [Header("Wander")]
+    public float wanderExtent;
+    public float wanderTurnDelayMin;
+    public float wanderTurnDelayMax;
+    public float wanderForceOverTime;
+    public float wanderForceMax;
+    public float wanderVelocityLimit;
+
     private Transform mGatherTo;
 
     private Coroutine mRout;
+
+    private Vector2 mSpawnPos;
+    private Vector2 mSpawnImpulseDir;
 
     /// <summary>
     /// Set gather state, if towards != null, else revert state to idle
@@ -44,6 +57,8 @@ public class EntityMucus : M8.EntityBase {
         switch((EntityState)state) {
             case EntityState.Normal:
                 body.simulated = true;
+
+                mRout = StartCoroutine(DoWander());
                 break;
 
             case EntityState.Gather:
@@ -68,10 +83,15 @@ public class EntityMucus : M8.EntityBase {
         mGatherTo = null;
         
         body.simulated = true;
+
+        mSpawnImpulseDir = Vector2.zero;
     }
 
     protected override void OnSpawned(M8.GenericParams parms) {
         //populate data/state for ai, player control, etc.
+        if(parms != null) {
+            parms.TryGetValue(Params.dir, out mSpawnImpulseDir);
+        }
     }
 
     protected override void OnDestroy() {
@@ -82,6 +102,11 @@ public class EntityMucus : M8.EntityBase {
 
     protected override void SpawnStart() {
         //start ai, player control, etc
+        if(mSpawnImpulseDir != Vector2.zero)
+            body.AddForce(mSpawnImpulseDir*spawnImpulse);
+
+        mSpawnPos = transform.position;
+
         state = (int)EntityState.Normal;
     }
 
@@ -137,5 +162,46 @@ public class EntityMucus : M8.EntityBase {
         mRout = null;
 
         state = (int)EntityState.Gathered;
+    }
+
+    bool IsWanderPositionOutOfBounds(float dir) {
+        float x = body.position.x;
+        if(dir < 0f)
+            return x < mSpawnPos.x - wanderExtent;
+        else if(dir > 0f)
+            return x > mSpawnPos.x + wanderExtent;
+        return false;
+    }
+
+    IEnumerator DoWander() {
+        var wait = new WaitForFixedUpdate();
+
+        float curTurnTime = 0f;
+        float turnDelay = Random.Range(wanderTurnDelayMin, wanderTurnDelayMax);
+        float curForce = 0f;
+        Vector2 dir = new Vector2(Random.Range(0, 2) == 0 ? 1.0f : -1.0f, 0f);
+
+        while(true) {
+            if(body.velocity.sqrMagnitude < wanderVelocityLimit*wanderVelocityLimit)
+                body.AddForce(dir*curForce);
+
+            if(curTurnTime >= turnDelay || IsWanderPositionOutOfBounds(dir.x)) {
+                curTurnTime = 0f;
+                turnDelay = Random.Range(wanderTurnDelayMin, wanderTurnDelayMax);
+                curForce = 0f;
+                dir.x *= -1;
+            }
+
+            yield return wait;
+
+            if(Mathf.Sign(body.velocity.x) == dir.x)
+                curTurnTime += Time.fixedDeltaTime;
+
+            if(curForce < wanderForceMax) {
+                curForce += wanderForceOverTime*Time.fixedDeltaTime;
+                if(curForce > wanderForceMax)
+                    curForce = wanderForceMax;
+            }
+        }
     }
 }
