@@ -128,7 +128,7 @@ public class MucusGather : MonoBehaviour {
             return;
 
         //check if we are full
-        if(mSpawnedMucusForm && mSpawnedMucusForm.currentGrowthCount >= mSpawnedMucusForm.growthMaxCount)
+        if(mSpawnedMucusForm && mSpawnedMucusForm.currentGrowthCount >= mSpawnedMucusForm.stats.growthMaxCount)
             return;
 
         var mucus = other.GetComponent<EntityMucus>();

@@ -3,20 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EntityMucus : M8.EntityBase {
+    public StatEntityMucus stats;
+
     public Rigidbody2D body;
-
-    public float gatherSpeed;
-
-    public float spawnImpulse;
-
-    [Header("Wander")]
-    public float wanderExtent;
-    public float wanderTurnDelayMin;
-    public float wanderTurnDelayMax;
-    public float wanderForceOverTime;
-    public float wanderForceMax;
-    public float wanderVelocityLimit;
-
+            
     private Transform mGatherTo;
 
     private Coroutine mRout;
@@ -103,7 +93,7 @@ public class EntityMucus : M8.EntityBase {
     protected override void SpawnStart() {
         //start ai, player control, etc
         if(mSpawnImpulseDir != Vector2.zero)
-            body.AddForce(mSpawnImpulseDir*spawnImpulse);
+            body.AddForce(mSpawnImpulseDir*stats.spawnImpulse);
 
         mSpawnPos = transform.position;
 
@@ -137,7 +127,7 @@ public class EntityMucus : M8.EntityBase {
             float dist = (endPos - startPos).magnitude;
 
             if(dist > 0f) {
-                delay = dist/gatherSpeed;
+                delay = dist/stats.gatherSpeed;
             }
             else
                 active = false;
@@ -167,40 +157,55 @@ public class EntityMucus : M8.EntityBase {
     bool IsWanderPositionOutOfBounds(float dir) {
         float x = body.position.x;
         if(dir < 0f)
-            return x < mSpawnPos.x - wanderExtent;
+            return x < mSpawnPos.x - stats.wanderExtent;
         else if(dir > 0f)
-            return x > mSpawnPos.x + wanderExtent;
+            return x > mSpawnPos.x + stats.wanderExtent;
         return false;
     }
 
+    void OnCollisionEnter(Collision collision) {
+        var contact = collision.contacts[0];
+        Vector2 normal = contact.normal;
+
+        Vector2 dir = body.velocity.normalized;
+
+        var refl = Vector2.Reflect(dir, normal);
+
+        mDirX = Mathf.Sign(refl.x);
+    }
+
+    float mDirX;
+
     IEnumerator DoWander() {
         var wait = new WaitForFixedUpdate();
-
+        
         float curTurnTime = 0f;
-        float turnDelay = Random.Range(wanderTurnDelayMin, wanderTurnDelayMax);
+        float turnDelay = Random.Range(stats.wanderTurnDelayMin, stats.wanderTurnDelayMax);
         float curForce = 0f;
-        Vector2 dir = new Vector2(Random.Range(0, 2) == 0 ? 1.0f : -1.0f, 0f);
-
+        mDirX = Random.Range(0, 2) == 0 ? 1.0f : -1.0f;
+        
         while(true) {
-            if(body.velocity.sqrMagnitude < wanderVelocityLimit*wanderVelocityLimit)
-                body.AddForce(dir*curForce);
-
-            if(curTurnTime >= turnDelay || IsWanderPositionOutOfBounds(dir.x)) {
-                curTurnTime = 0f;
-                turnDelay = Random.Range(wanderTurnDelayMin, wanderTurnDelayMax);
-                curForce = 0f;
-                dir.x *= -1;
+            Vector2 curVel = body.velocity;
+            if(curVel.sqrMagnitude < stats.wanderVelocityLimit*stats.wanderVelocityLimit) {                
+                Vector2 forceDir = new Vector2(mDirX, 0f);
+                body.AddForce(forceDir*curForce);
             }
 
+            if(curTurnTime >= turnDelay || IsWanderPositionOutOfBounds(mDirX)) {
+                curTurnTime = 0f;
+                turnDelay = Random.Range(stats.wanderTurnDelayMin, stats.wanderTurnDelayMax);
+                curForce = 0f;
+                mDirX *= -1;
+            }
+            
             yield return wait;
 
-            if(Mathf.Sign(body.velocity.x) == dir.x)
-                curTurnTime += Time.fixedDeltaTime;
+            curTurnTime += Time.fixedDeltaTime;
 
-            if(curForce < wanderForceMax) {
-                curForce += wanderForceOverTime*Time.fixedDeltaTime;
-                if(curForce > wanderForceMax)
-                    curForce = wanderForceMax;
+            if(curForce < stats.wanderForceMax) {
+                curForce += stats.wanderForceOverTime*Time.fixedDeltaTime;
+                if(curForce > stats.wanderForceMax)
+                    curForce = stats.wanderForceMax;
             }
         }
     }

@@ -3,31 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EntityMucusForm : M8.EntityBase {
+    public StatEntityMucusForm stats;
+
     public Rigidbody2D body;
     public CircleCollider2D circleCollider;
     public Transform root;
 
     public M8.Animator.AnimatorData animator;
     
-    [Header("Radius")]
-    public float radiusStart;
-    public float radiusEnd;
-
-    [Header("Growth")]
-    public int growthMaxCount;
-
-    [Header("Launch")]
-    public float launchForceMin;
-    public float launchForceMax;
-    public float launchForceImpulse;
-    public float launchForceMaxDistance;
-    public AnimationCurve launchForceCurve;
-    public float launchDuration;
-
-    public float launchForceGrowthDecayMinDelay = 3f;
-    public float launchForceGrowthDecayMaxDelay = 1f;
-    public AnimationCurve launchForceDecayCurve;
-
     public float radius {
         get {
             return mRadius;
@@ -35,11 +18,11 @@ public class EntityMucusForm : M8.EntityBase {
 
         private set {
             if(mRadius != value) {
-                mRadius = Mathf.Clamp(value, radiusStart, radiusEnd);
+                mRadius = Mathf.Clamp(value, stats.radiusStart, stats.radiusEnd);
 
                 if(circleCollider) circleCollider.radius = mRadius;
                 
-                float scale = radiusStart > 0f ? mRadius/radiusStart : 0f;
+                float scale = stats.radiusStart > 0f ? mRadius/stats.radiusStart : 0f;
 
                 if(root)
                     root.localScale = new Vector3(scale, scale, 1f);
@@ -59,13 +42,13 @@ public class EntityMucusForm : M8.EntityBase {
     private Bounds mLaunchBounds;
 
     public void Grow() {
-        if(mCurGrowthCount < growthMaxCount) {
+        if(mCurGrowthCount < stats.growthMaxCount) {
             mCurGrowthCount++;
 
             //TODO: interpolate
-            float t = (float)mCurGrowthCount/growthMaxCount;
+            float t = (float)mCurGrowthCount/stats.growthMaxCount;
 
-            radius = Mathf.Lerp(radiusStart, radiusEnd, t);
+            radius = Mathf.Lerp(stats.radiusStart, stats.radiusEnd, t);
         }
     }
 
@@ -76,7 +59,7 @@ public class EntityMucusForm : M8.EntityBase {
         }
 
         mLaunchDir = dir;
-        mLaunchForce = Mathf.Lerp(launchForceMin, launchForceMax, GetLaunchForceScale(length));
+        mLaunchForce = Mathf.Lerp(stats.launchForceMin, stats.launchForceMax, GetLaunchForceScale(length));
         mLaunchBounds = bounds;
 
         state = (int)EntityState.Launch;
@@ -87,7 +70,7 @@ public class EntityMucusForm : M8.EntityBase {
     }
 
     public float GetLaunchForceScale(float length) {
-        return Mathf.Clamp01(launchForceCurve.Evaluate(Mathf.Clamp01((length - radius)/launchForceMaxDistance)));
+        return Mathf.Clamp01(stats.launchForceCurve.Evaluate(Mathf.Clamp01((length - radius)/stats.launchForceMaxDistance)));
     }
 
     protected override void StateChanged() {
@@ -112,6 +95,9 @@ public class EntityMucusForm : M8.EntityBase {
                 //TODO: animation
                 Release();
                 break;
+
+            case EntityState.Bind:
+                break;
         }
     }
 
@@ -122,7 +108,7 @@ public class EntityMucusForm : M8.EntityBase {
             mRout = null;
         }
 
-        radius = radiusStart;
+        radius = stats.radiusStart;
 
         mCurGrowthCount = 0;
 
@@ -148,7 +134,7 @@ public class EntityMucusForm : M8.EntityBase {
         base.Awake();
 
         //initialize data/variables
-        radius = radiusStart;
+        radius = stats.radiusStart;
         
         body.simulated = false;
     }
@@ -163,20 +149,20 @@ public class EntityMucusForm : M8.EntityBase {
     IEnumerator DoLaunch() {
         var wait = new WaitForFixedUpdate();
 
-        float decayDelay = Mathf.Lerp(launchForceGrowthDecayMinDelay, launchForceGrowthDecayMaxDelay, (float)mCurGrowthCount/growthMaxCount);
+        float decayDelay = Mathf.Lerp(stats.launchForceGrowthDecayMinDelay, stats.launchForceGrowthDecayMaxDelay, (float)mCurGrowthCount/stats.growthMaxCount);
 
-        if(launchForceImpulse != 0f)
-            body.AddForce(mLaunchDir*launchForceImpulse, ForceMode2D.Impulse);
+        if(stats.launchForceImpulse != 0f)
+            body.AddForce(mLaunchDir*stats.launchForceImpulse, ForceMode2D.Impulse);
 
         float curTime = 0f;
         float forceScale = 1f;
-        while(curTime < launchDuration && mLaunchBounds.Contains(body.position)) {
+        while(curTime < stats.launchDuration && mLaunchBounds.Contains(body.position)) {
             body.AddForce(mLaunchDir*mLaunchForce*forceScale);
 
             yield return wait;
 
             curTime += Time.fixedDeltaTime;
-            forceScale = Mathf.Clamp01(launchForceDecayCurve.Evaluate(Mathf.Clamp01(curTime/decayDelay)));
+            forceScale = Mathf.Clamp01(stats.launchForceDecayCurve.Evaluate(Mathf.Clamp01(curTime/decayDelay)));
         }
 
         mRout = null;
@@ -184,16 +170,26 @@ public class EntityMucusForm : M8.EntityBase {
         state = (int)EntityState.Dead;
     }
 
+    void OnTriggerEnter2D(Collider2D other) {
+        if(other.CompareTag(Tags.pathogen)) {
+            //var pathogenStats = other.GetComponent<StatEntityController>();
+
+
+        }
+    }
+
     void OnDrawGizmos() {
+        if(!stats)
+            return;
 
         Gizmos.color = Color.red;
 
-        if(radiusEnd > 0f)
-            Gizmos.DrawWireSphere(transform.position, radiusEnd);
+        if(stats.radiusEnd > 0f)
+            Gizmos.DrawWireSphere(transform.position, stats.radiusEnd);
 
         Gizmos.color *= 0.5f;
 
-        if(radiusStart > 0f)
-            Gizmos.DrawWireSphere(transform.position, radiusStart);
+        if(stats.radiusStart > 0f)
+            Gizmos.DrawWireSphere(transform.position, stats.radiusStart);
     }
 }

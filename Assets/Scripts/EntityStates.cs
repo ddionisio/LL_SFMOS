@@ -2,11 +2,10 @@
 public enum EntityState {
     //general
     Normal,
-    Dying,
     Dead,
 
     //antigen
-    Ensnared,
+    Bind, //bound by Y things
 
     //mucus
     Gather,
