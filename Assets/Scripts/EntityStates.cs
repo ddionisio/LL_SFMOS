@@ -5,12 +5,16 @@ public enum EntityState {
     Dead,
 
     //antigen
-    Bind, //bound by Y things
+    Bind, //bound by Y things, or mucus
 
     //mucus
     Gather,
     Gathered,
 
     //mucus form
-    Launch
+    Launch,
+
+    //cell
+    Inflamed,
+    Infected
 }

@@ -174,7 +174,7 @@ public class MucusGather : MonoBehaviour {
         if(mSpawnedMucusForm) {
             mSpawnedMucusForm.Grow();
 
-            Debug.Log("growth count: "+mSpawnedMucusForm.currentGrowthCount);
+            //Debug.Log("growth count: "+mSpawnedMucusForm.currentGrowthCount);
         }
         else {
             //generate a new form

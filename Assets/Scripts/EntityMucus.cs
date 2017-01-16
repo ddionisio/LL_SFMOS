@@ -82,15 +82,7 @@ public class EntityMucus : M8.EntityBase {
         if(parms != null) {
             parms.TryGetValue(Params.dir, out mSpawnImpulseDir);
         }
-    }
 
-    protected override void OnDestroy() {
-        //dealloc here
-
-        base.OnDestroy();
-    }
-
-    protected override void SpawnStart() {
         //start ai, player control, etc
         if(mSpawnImpulseDir != Vector2.zero)
             body.AddForce(mSpawnImpulseDir*stats.spawnImpulse);
@@ -100,6 +92,12 @@ public class EntityMucus : M8.EntityBase {
         state = (int)EntityState.Normal;
     }
 
+    protected override void OnDestroy() {
+        //dealloc here
+
+        base.OnDestroy();
+    }
+    
     protected override void Awake() {
         base.Awake();
 

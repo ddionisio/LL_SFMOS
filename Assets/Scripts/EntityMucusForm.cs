@@ -41,10 +41,18 @@ public class EntityMucusForm : M8.EntityBase {
     private float mLaunchForce;
     private Bounds mLaunchBounds;
 
-    public void Grow() {
-        if(mCurGrowthCount < stats.growthMaxCount) {
-            mCurGrowthCount++;
+    //bind
+    private StatEntityController mBoundEntityStat;
 
+    public void Grow() {
+        SetGrow(mCurGrowthCount + 1);
+    }
+
+    public void SetGrow(int val) {
+        var prevGrowthCount = mCurGrowthCount;
+        mCurGrowthCount = Mathf.Clamp(val, 0, stats.growthMaxCount);
+
+        if(mCurGrowthCount != prevGrowthCount) {
             //TODO: interpolate
             float t = (float)mCurGrowthCount/stats.growthMaxCount;
 
@@ -52,7 +60,7 @@ public class EntityMucusForm : M8.EntityBase {
         }
     }
 
-    public void Launch(Vector2 dir, float length, Bounds bounds) {
+    public void Launch(Vector2 dir, float length, Bounds bounds) {        
         if(dir.x + dir.y == 0f) {
             Cancel();
             return;
@@ -79,6 +87,12 @@ public class EntityMucusForm : M8.EntityBase {
             mRout = null;
         }
 
+        switch((EntityState)prevState) {
+            case EntityState.Bind:
+                SetBound(null);
+                break;
+        }
+
         switch((EntityState)state) {
             case EntityState.Normal:
                 body.simulated = false;
@@ -97,6 +111,8 @@ public class EntityMucusForm : M8.EntityBase {
                 break;
 
             case EntityState.Bind:
+                body.simulated = false;
+                mRout = StartCoroutine(DoBound());
                 break;
         }
     }
@@ -107,6 +123,8 @@ public class EntityMucusForm : M8.EntityBase {
             StopCoroutine(mRout);
             mRout = null;
         }
+
+        SetBound(null);
 
         radius = stats.radiusStart;
 
@@ -124,12 +142,7 @@ public class EntityMucusForm : M8.EntityBase {
 
         base.OnDestroy();
     }
-
-    protected override void SpawnStart() {
-        //start ai, player control, etc
-        state = (int)EntityState.Normal;
-    }
-
+    
     protected override void Awake() {
         base.Awake();
 
@@ -144,6 +157,20 @@ public class EntityMucusForm : M8.EntityBase {
         base.Start();
 
         //initialize variables from other sources (for communicating with managers, etc.)
+    }
+
+    void SetBound(StatEntityController entStat) {
+        if(mBoundEntityStat != entStat) {
+            if(mBoundEntityStat != null) {
+                mBoundEntityStat.HPChangedCallback -= OnBoundEntityHPChanged;
+            }
+
+            mBoundEntityStat = entStat;
+
+            if(mBoundEntityStat != null) {
+                mBoundEntityStat.HPChangedCallback += OnBoundEntityHPChanged;
+            }
+        }
     }
 
     IEnumerator DoLaunch() {
@@ -170,12 +197,140 @@ public class EntityMucusForm : M8.EntityBase {
         state = (int)EntityState.Dead;
     }
 
+    IEnumerator DoBound() {
+        var wait = new WaitForFixedUpdate();
+
+        var dmg = stats.GetDamage(mCurGrowthCount);
+        var dmgStam = stats.GetDamageStamina(mCurGrowthCount);
+
+        var curHP = stats.GetHP(mCurGrowthCount);
+
+        var attack = mBoundEntityStat.attackStamina;
+        var attackDelay = mBoundEntityStat.attackStaminaPerSecond;
+
+        var curTime = 0f;
+
+        while(curHP > 0f) {
+            if(curTime >= attackDelay) {
+                curHP -= attack;
+
+                //TODO: animation
+
+                curTime = 0f;
+            }
+
+            yield return wait;
+
+            curTime += Time.fixedDeltaTime;
+        }
+
+        //restore bound damage
+        if(mBoundEntityStat != null) {
+            mBoundEntityStat.currentHP += dmg;
+            mBoundEntityStat.currentStamina += dmgStam;
+        }
+
+        state = (int)EntityState.Dead;
+    }
+
     void OnTriggerEnter2D(Collider2D other) {
         if(other.CompareTag(Tags.pathogen)) {
-            //var pathogenStats = other.GetComponent<StatEntityController>();
+            var pathogenStats = other.attachedRigidbody.GetComponent<StatEntityController>();
 
+            var pathogenPrevHP = pathogenStats.currentHP;
 
+            //pathogen already dead, ignore
+            if(pathogenPrevHP <= 0f)
+                return;
+
+            var dmg = stats.GetDamage(mCurGrowthCount);
+            var dmgStam = stats.GetDamageStamina(mCurGrowthCount);
+                        
+            pathogenStats.currentHP -= dmg;
+            pathogenStats.currentStamina -= dmgStam;
+
+            //if pathogen still alive, bind
+            if(pathogenStats.currentHP > 0f) {
+                SetBound(pathogenStats);
+
+                //snap to pathogen
+                Vector2 pos = transform.position;
+
+                var layerIndex = other.gameObject.layer;
+
+                Vector2 dir = (Vector2)other.transform.position - pos;
+                float dist = dir.magnitude;
+                if(dist > 0f)
+                    dir /= dist;
+
+                var coll = Physics2D.Raycast(pos, dir, dist, 1<<layerIndex);
+                if(coll.rigidbody == other.attachedRigidbody) { //should be the same collider
+                    transform.position = coll.point;
+                    state = (int)EntityState.Bind;
+                }
+                else //edge case, just die
+                    state = (int)EntityState.Dead;
+            }
+            else {
+                //check excess damage and split off to other pathogens
+                var excessDmg = Mathf.Round(dmg - pathogenPrevHP);
+                if(excessDmg > 0f) {
+                    int splitCount = Mathf.CeilToInt(excessDmg);
+                    int splitGrowth;
+                    if(splitCount > stats.excessMaxSplitCount) {
+                        splitGrowth = Mathf.Max(Mathf.CeilToInt((float)splitCount/stats.excessMaxSplitCount), 1);
+                        splitCount = stats.excessMaxSplitCount;
+                    }
+                    else
+                        splitGrowth = 1;
+
+                    //split towards near pathogens
+                    Vector2 pos = transform.position;
+
+                    var layerIndex = other.gameObject.layer;
+                    var colls = Physics2D.OverlapCircleAll(other.transform.position, stats.excessRadius, 1<<layerIndex, 0f);
+                                        
+                    for(int i = 0; i < colls.Length && splitCount > 0; i++) {
+                        if(!colls[i].CompareTag(Tags.pathogen) || colls[i].attachedRigidbody == other.attachedRigidbody)
+                            continue;
+
+                        var dir = ((Vector2)colls[i].transform.position - pos).normalized;
+
+                        var splitSpawn = M8.PoolController.SpawnFromGroup(poolData.group, poolData.factoryKey, name+"_split", null, null);
+                        var splitMucusForm = splitSpawn.GetComponent<EntityMucusForm>();
+
+                        splitSpawn.position = pos;
+
+                        splitMucusForm.SetGrow(splitGrowth);
+                        splitMucusForm.Launch(dir, stats.launchForceMaxDistance, mLaunchBounds);
+
+                        splitCount--;
+                    }
+
+                    //random splits
+                    for(int i = 0; i < splitCount; i++) {
+                        var dir = Vector2.up;
+                        dir = M8.MathUtil.Rotate(dir, 360f*(Random.Range(1, 65)/65.0f));
+
+                        var splitSpawn = M8.PoolController.SpawnFromGroup(poolData.group, poolData.factoryKey, name+"_split", null, null);
+                        var splitMucusForm = splitSpawn.GetComponent<EntityMucusForm>();
+
+                        splitSpawn.position = pos;
+
+                        splitMucusForm.SetGrow(splitGrowth);
+                        splitMucusForm.Launch(dir, stats.launchForceMaxDistance, mLaunchBounds);
+                    }
+                }
+
+                state = (int)EntityState.Dead;
+            }
         }
+    }
+
+    void OnBoundEntityHPChanged(StatEntityController entStat, float prev) {
+        //release when the bound entity dies
+        if(entStat.currentHP == 0f)
+            state = (int)EntityState.Dead;
     }
 
     void OnDrawGizmos() {
@@ -191,5 +346,10 @@ public class EntityMucusForm : M8.EntityBase {
 
         if(stats.radiusStart > 0f)
             Gizmos.DrawWireSphere(transform.position, stats.radiusStart);
+
+        Gizmos.color = Color.yellow;
+
+        if(stats.excessRadius > 0f)
+            Gizmos.DrawWireSphere(transform.position, stats.excessRadius);
     }
 }

@@ -88,9 +88,7 @@ public class Mission0Controller : MissionController {
                 var dist = dir.magnitude;
                 if(dist > 0f)
                     dir /= dist;
-
-                Debug.Log("launch dist: "+dist);
-
+                
                 mucusGather.Release(dir, dist, mucusFormBounds);
             }
             else {

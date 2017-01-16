@@ -9,4 +9,10 @@ using UnityEngine;
 public class StatEntity : ScriptableObject {
     public float HP;
     public float stamina;
+
+    public float attack;
+    public float attackPerSecond;
+
+    public float attackStamina;
+    public float attackStaminaPerSecond;
 }

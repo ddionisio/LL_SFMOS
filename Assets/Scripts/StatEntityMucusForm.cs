@@ -23,7 +23,35 @@ public class StatEntityMucusForm : ScriptableObject {
     public float launchForceGrowthDecayMaxDelay = 1f;
     public AnimationCurve launchForceDecayCurve;
 
+    [Header("Stats")]
+    public float HPMin;
+    public float HPMax;
+
     [Header("Attack")]
-    public float damage;
-    public float damageStamina;
+    public float damageMin;
+    public float damageMax;
+
+    public float damageStaminaMin;
+    public float damageStaminaMax;
+
+    public float excessRadius;
+    public int excessMaxSplitCount;
+
+    public float GetDamage(int curGrowth) {
+        float t = (float)curGrowth/growthMaxCount;
+
+        return Mathf.Lerp(damageMin, damageMax, t);
+    }
+
+    public float GetDamageStamina(int curGrowth) {
+        float t = (float)curGrowth/growthMaxCount;
+
+        return Mathf.Lerp(damageStaminaMin, damageStaminaMax, t);
+    }
+
+    public float GetHP(int curGrowth) {
+        float t = (float)curGrowth/growthMaxCount;
+
+        return Mathf.Lerp(HPMin, HPMax, t);
+    }
 }
