@@ -15,6 +15,8 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
     int _progressMax;
 
     private int mCurProgress;
+
+    private bool mPaused;
     
     public string gameID { get { return _gameID; } }
 
@@ -68,11 +70,17 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
     void OnGameStateChanged(GameState state) {
         switch(state) {
             case GameState.Paused:
-                M8.SceneManager.instance.Pause();
+                if(!mPaused) {
+                    mPaused = true;
+                    M8.SceneManager.instance.Pause();
+                }
                 break;
 
             case GameState.Resumed:
-                M8.SceneManager.instance.Resume();
+                if(mPaused) {
+                    mPaused = false;
+                    M8.SceneManager.instance.Resume();
+                }
                 break;
         }
     }

@@ -51,6 +51,8 @@ public class MucusGatherInputField : MonoBehaviour,
     }
 
     void IPointerDownHandler.OnPointerDown(PointerEventData eventData) {
+        //Debug.Log("input down: "+eventData.pointerCurrentRaycast.worldPosition.ToString()+" "+eventData.pointerCurrentRaycast.screenPosition.ToString());
+
         mIsDown = true;
 
         mOrigResult = eventData.pointerCurrentRaycast;
@@ -64,6 +66,8 @@ public class MucusGatherInputField : MonoBehaviour,
     }
     
     void IPointerUpHandler.OnPointerUp(PointerEventData eventData) {
+        //Debug.Log("input up: "+eventData.pointerCurrentRaycast.worldPosition.ToString()+" "+eventData.pointerCurrentRaycast.screenPosition.ToString());
+
         mIsDown = false;
 
         ComputePosition(eventData.pointerCurrentRaycast.worldPosition, out mCurPos, out mCurArea);
