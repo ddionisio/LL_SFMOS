@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Mission0Controller : MissionController {
     
+    [Header("Mucus Gather")]
     public MucusGatherInputField mucusGatherInput;
     public MucusGather mucusGather;
 
@@ -11,6 +12,15 @@ public class Mission0Controller : MissionController {
     public GameObject pointerGO;
 
     public Bounds mucusFormBounds;
+
+    [Header("Health")]
+    public EntityCell[] cellWalls; //when all these die, game over, man
+
+    [Header("Progress")]
+    public M8.Animator.AnimatorData animator;
+
+    public string takeProgressTransition; //do some woosh thing towards left
+
 
     private bool mIsPointerActive;
     
