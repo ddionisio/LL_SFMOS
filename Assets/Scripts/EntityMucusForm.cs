@@ -236,6 +236,8 @@ public class EntityMucusForm : M8.EntityBase {
     void OnTriggerEnter2D(Collider2D other) {
         if(other.CompareTag(Tags.pathogen)) {
             var pathogenStats = other.attachedRigidbody.GetComponent<StatEntityController>();
+            if(!pathogenStats)
+                return;
 
             var pathogenPrevHP = pathogenStats.currentHP;
 

@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-[RequireComponent(typeof(FlockFilter))]
 public class FlockUnit : MotionBase {
     public enum State {
         Idle, //no cohesion, move, alignment
@@ -35,9 +34,7 @@ public class FlockUnit : MotionBase {
 
     [System.NonSerialized]
     public float minMoveTargetDistance = 0.0f; //minimum distance to maintain from move target
-
-    private FlockFilter mFilter = null;
-
+    
     private Transform mMoveTarget = null;
     private float mMoveTargetDist = 0;
     private Vector2 mMoveTargetDir = Vector2.right;
@@ -62,12 +59,7 @@ public class FlockUnit : MotionBase {
     private bool mWanderEnabled = false;
 
     public override float maxSpeed { get { return data.maxSpeed; } }
-
-    public int id {
-        get { return mFilter.id; }
-        set { mFilter.id = value; }
-    }
-
+    
     public Transform moveTarget {
         get { return mMoveTarget; }
 
@@ -118,9 +110,7 @@ public class FlockUnit : MotionBase {
 
     protected override void Awake() {
         base.Awake();
-
-        mFilter = GetComponent<FlockFilter>();
-
+        
         mTrans = transform;
 
         if(seeker)
@@ -377,14 +367,14 @@ public class FlockUnit : MotionBase {
             int numSeparate = 0;
             int numAvoid = 0;
 
-            foreach(FlockFilter unit in sensor.items) {
+            foreach(var unit in sensor.items) {
                 if(unit != null) {
                     Vector2 otherPos = unit.transform.position;
 
                     dPos = pos - otherPos;
                     dist = dPos.magnitude;
 
-                    if(mFilter.CheckAvoid(unit.id)) {
+                    if(data.CheckAvoid(unit.tag)) {
                         //avoid
                         if(dist < data.avoidDistance) {
                             dPos /= dist;
@@ -392,7 +382,7 @@ public class FlockUnit : MotionBase {
                             numAvoid++;
                         }
                     }
-                    else if(mFilter.id == unit.id) {
+                    else {
                         //separate	
                         if(dist < data.separateDistance) {
                             dPos /= dist;
@@ -450,14 +440,14 @@ public class FlockUnit : MotionBase {
             int numSeparate = 0;
             int numAvoid = 0;
 
-            foreach(FlockFilter unit in sensor.items) {
+            foreach(var unit in sensor.items) {
                 if(unit != null) {
                     Vector2 otherPos = unit.transform.position;
 
                     dPos = pos - otherPos;
                     dist = dPos.magnitude;
 
-                    if(mFilter.CheckAvoid(unit.id)) {
+                    if(data.CheckAvoid(unit.tag)) {
                         //avoid
                         if(dist < data.avoidDistance) {
                             dPos /= dist;
@@ -465,7 +455,7 @@ public class FlockUnit : MotionBase {
                             numAvoid++;
                         }
                     }
-                    else if(mFilter.id == unit.id) {
+                    else { 
                         //separate	
                         if(dist < data.separateDistance) {
                             dPos /= dist;
@@ -473,8 +463,8 @@ public class FlockUnit : MotionBase {
                             numSeparate++;
                         }
 
-                        //only follow if it has a legit body
-                        if(unit.isLegit) {
+                        //only follow if the same group
+                        if(unit.groupMoveEnabled && data.group == unit.data.group) {
                             Rigidbody2D otherBody = unit.body;
                             if(otherBody != null && !otherBody.isKinematic) {
                                 //align speed
