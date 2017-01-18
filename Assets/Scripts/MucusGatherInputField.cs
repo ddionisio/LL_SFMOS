@@ -25,9 +25,23 @@ public class MucusGatherInputField : MonoBehaviour,
     public AreaType currentAreaType { get { return mCurArea; } }
     public Vector2 currentPosition { get { return mCurPos; } }
 
+    public bool isLocked {
+        get { return mIsLocked; }
+
+        set {
+            if(mIsLocked != value) {
+                mIsLocked = value;
+
+                if(lockChangeCallback != null)
+                    lockChangeCallback(this);
+            }
+        }
+    }
+
     public event Action<MucusGatherInputField> pointerDownCallback;
     public event Action<MucusGatherInputField> pointerDragCallback;
     public event Action<MucusGatherInputField> pointerUpCallback;
+    public event Action<MucusGatherInputField> lockChangeCallback;
 
     private BoxCollider2D mColl;
 
@@ -41,6 +55,8 @@ public class MucusGatherInputField : MonoBehaviour,
     private Vector2 mOrigPos;
     private Vector2 mCurPos;
 
+    private bool mIsLocked;
+
     public void ApplyCurrentToOrigin() {
         mOrigResult = mCurResult;
         mOrigPos = mCurPos;
@@ -51,6 +67,9 @@ public class MucusGatherInputField : MonoBehaviour,
     }
 
     void IPointerDownHandler.OnPointerDown(PointerEventData eventData) {
+        if(mIsLocked || mIsDown)
+            return;
+
         //Debug.Log("input down: "+eventData.pointerCurrentRaycast.worldPosition.ToString()+" "+eventData.pointerCurrentRaycast.screenPosition.ToString());
 
         mIsDown = true;
@@ -66,10 +85,12 @@ public class MucusGatherInputField : MonoBehaviour,
     }
     
     void IPointerUpHandler.OnPointerUp(PointerEventData eventData) {
-        //Debug.Log("input up: "+eventData.pointerCurrentRaycast.worldPosition.ToString()+" "+eventData.pointerCurrentRaycast.screenPosition.ToString());
+        if(mIsLocked || !mIsDown)
+            return;
 
         mIsDown = false;
 
+        //Debug.Log("input up: "+eventData.pointerCurrentRaycast.worldPosition.ToString()+" "+eventData.pointerCurrentRaycast.screenPosition.ToString());
         ComputePosition(eventData.pointerCurrentRaycast.worldPosition, out mCurPos, out mCurArea);
 
         if(pointerUpCallback != null)
@@ -77,6 +98,9 @@ public class MucusGatherInputField : MonoBehaviour,
     }
 
     void IDragHandler.OnDrag(PointerEventData eventData) {
+        if(mIsLocked)
+            return;
+
         mCurResult = eventData.pointerCurrentRaycast;
 
         if(!mCurResult.isValid || mCurResult.gameObject != gameObject)
