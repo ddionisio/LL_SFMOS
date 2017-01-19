@@ -297,12 +297,9 @@ public class EntityMucusForm : M8.EntityBase {
                             continue;
 
                         var dir = ((Vector2)colls[i].transform.position - pos).normalized;
-
-                        var splitSpawn = M8.PoolController.SpawnFromGroup(poolData.group, poolData.factoryKey, name+"_split", null, null);
-                        var splitMucusForm = splitSpawn.GetComponent<EntityMucusForm>();
-
-                        splitSpawn.position = pos;
-
+                        
+                        var splitMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(poolData.group, poolData.factoryKey, name+"_split", null, pos, null);
+                        
                         splitMucusForm.SetGrow(splitGrowth);
                         splitMucusForm.Launch(dir, stats.launchForceMaxDistance, mLaunchBounds);
 
@@ -313,11 +310,8 @@ public class EntityMucusForm : M8.EntityBase {
                     for(int i = 0; i < splitCount; i++) {
                         var dir = Vector2.up;
                         dir = M8.MathUtil.Rotate(dir, 360f*(Random.Range(1, 65)/65.0f));
-
-                        var splitSpawn = M8.PoolController.SpawnFromGroup(poolData.group, poolData.factoryKey, name+"_split", null, null);
-                        var splitMucusForm = splitSpawn.GetComponent<EntityMucusForm>();
-
-                        splitSpawn.position = pos;
+                        
+                        var splitMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(poolData.group, poolData.factoryKey, name+"_split", null, pos, null);
 
                         splitMucusForm.SetGrow(splitGrowth);
                         splitMucusForm.Launch(dir, stats.launchForceMaxDistance, mLaunchBounds);

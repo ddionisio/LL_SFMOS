@@ -52,7 +52,8 @@ public class Mission0Controller : MissionController {
 
     public StageData[] stages; //determines stage and sub stages
 
-    public float stagePlayDuration = 60; //in seconds
+    public string[] stageSpawnTagChecks; //which spawned entities to check to complete a stage
+
     public float stageNextDelay = 3; //how long before the next stage transition
 
     private bool mIsPointerActive;
@@ -62,10 +63,10 @@ public class Mission0Controller : MissionController {
     private State mCurState = State.None;
     private Coroutine mRout;
 
-    private bool mIsWaiting;
+    private bool mIsBeginWait;
 
-    public bool isWaiting { get { return mIsWaiting; } }
-        
+    private List<M8.PoolDataController> mStageSpawnChecks; //if this reaches 0 after all sub stage finishes, go to next stage
+    
     protected override void OnInstanceDeinit() {
         base.OnInstanceDeinit();
 
@@ -80,6 +81,8 @@ public class Mission0Controller : MissionController {
             if(cellWalls[i])
                 cellWalls[i].stats.HPChangedCallback -= OnCellWallHPChanged;
         }
+
+        mStageSpawnChecks = new List<M8.PoolDataController>();
     }
 
     protected override void OnInstanceInit() {
@@ -127,11 +130,13 @@ public class Mission0Controller : MissionController {
         }
     }
 
-    /// <summary>
-    /// Call this when you want to progress in current state, when it is waiting
-    /// </summary>
-    public void Progress() {
-        mIsWaiting = false;
+    public override void Signal(SignalType signal, int counter) {
+        switch(signal) {
+            case SignalType.Proceed:
+                if(mCurState == State.Begin)
+                    mIsBeginWait = false;
+                break;
+        }
     }
 
     public void EnterStage(int stage) {
@@ -142,7 +147,7 @@ public class Mission0Controller : MissionController {
 
     void ApplyState(State state) {
         if(mCurState != state) {
-            var prevState = mCurState;
+            //var prevState = mCurState;
             mCurState = state;
 
             if(mRout != null) {
@@ -188,9 +193,11 @@ public class Mission0Controller : MissionController {
         mucusGatherInput.isLocked = false;
 
         //free form, wait for signal via call to Progress
-        mIsWaiting = true;
+        mIsBeginWait = true;
 
-        while(mIsWaiting)
+        SendSignal(SignalType.Waiting, 0);
+
+        while(mIsBeginWait)
             yield return null;
 
         mucusGatherInput.isLocked = true;
@@ -230,9 +237,7 @@ public class Mission0Controller : MissionController {
         mucusGatherInput.isLocked = false;
 
         var curStage = stages[mCurStageInd];
-
-        var startTime = Time.time;
-
+        
         if(curStage.subStageCount > 0) {
             var waitNextSubStage = new WaitForSeconds(curStage.subStageNextDelay);
 
@@ -251,11 +256,11 @@ public class Mission0Controller : MissionController {
             animator.Play(take);
         }
 
-        //left over wait to get to new stage
-        while(Time.time - startTime < stagePlayDuration)
+        //wait for all spawn checks to be released
+        while(mStageSpawnChecks.Count > 0)
             yield return null;
 
-        //move current entities to the left?
+        //move specific entities to the left?
 
         yield return new WaitForSeconds(stageNextDelay);
 
@@ -366,6 +371,28 @@ public class Mission0Controller : MissionController {
 
         if(numDead >= cellWalls.Length)
             ApplyState(State.Defeat);
+    }
+
+    bool CheckSpawn(M8.PoolDataController pdc) {
+        bool isValidSpawn = false;
+        for(int i = 0; i < stageSpawnTagChecks.Length; i++) {
+            if(pdc.CompareTag(stageSpawnTagChecks[i])) {
+                isValidSpawn = true;
+                break;
+            }
+        }
+
+        return isValidSpawn;
+    }
+
+    void OnSpawnEntity(M8.PoolDataController pdc) {
+        if(CheckSpawn(pdc))
+            mStageSpawnChecks.Add(pdc);
+    }
+
+    void OnDespawnEntity(M8.PoolDataController pdc) {
+        if(CheckSpawn(pdc))
+            mStageSpawnChecks.Remove(pdc);
     }
 
     void OnDrawGizmos() {

@@ -3,10 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class MissionController : M8.SingletonBehaviour<MissionController> {
+    public enum SignalType {
+        Waiting,
+        Proceed,
+    }
 
     public delegate void OnValueChangeCallback(int cur, int prev);
     
     public event OnValueChangeCallback scoreChangeCallback;
+    public event System.Action<SignalType, int> signalCallback; //listen to signals from mission control
 
     private int mCurScore;
     private M8.StatsController mStats;
@@ -35,6 +40,15 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
 
     public void ProcessLose() {
         M8.UIModal.Manager.instance.ModalOpen(ModalLose.modalRef);
+    }
+
+    public virtual void Signal(SignalType signal, int counter) {
+
+    }
+
+    protected void SendSignal(SignalType signal, int counter) {
+        if(signalCallback != null)
+            signalCallback(signal, counter);
     }
 
     protected override void OnInstanceDeinit() {

@@ -15,4 +15,11 @@ public class StatEntity : ScriptableObject {
 
     public float attackStamina;
     public float attackStaminaPerSecond;
+
+    public float seekDelay; //for seek state
+    public string seekTag;
+
+    public float lifeSpan; //how long before this thing just dies
+
+    public int score; //score upon death
 }

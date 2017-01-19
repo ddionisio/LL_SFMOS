@@ -17,6 +17,9 @@ public class StatEntityController : MonoBehaviour {
     public float attackStamina { get { return _data.attackStamina; } }
     public float attackStaminaPerSecond { get { return _data.attackStaminaPerSecond; } }
 
+    public float seekDelay { get { return _data.seekDelay; } }
+    public string seekTag { get { return _data.seekTag; } }
+
     public float currentHP {
         get { return mCurHP; }
         set {

@@ -1,11 +1,16 @@
 ﻿
 public enum EntityState {
-    //general
+    //general    
     Normal,
     Dead,
 
-    //antigen
-    Bind, //bound by Y things, or mucus
+    Control, //manual control of entity
+    Bind,
+
+    //pathogen
+    Wander, //simply just wander
+    Seek,
+
 
     //mucus
     Gather,
