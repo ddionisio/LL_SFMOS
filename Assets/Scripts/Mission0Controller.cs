@@ -362,7 +362,7 @@ public class Mission0Controller : MissionController {
         int numDead = 0;
         for(int i = 0; i < cellWalls.Length; i++) {
             if(cellWalls[i]) {
-                if(cellWalls[i].stats.currentHP <= 0f)
+                if(!cellWalls[i].stats.isAlive)
                     numDead++;
             }
             else

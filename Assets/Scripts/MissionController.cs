@@ -46,6 +46,10 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
 
     }
 
+    public virtual Transform RequestTarget(Transform requestor) {
+        return null;
+    }
+
     protected void SendSignal(SignalType signal, int counter) {
         if(signalCallback != null)
             signalCallback(signal, counter);

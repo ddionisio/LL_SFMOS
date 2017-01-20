@@ -35,7 +35,7 @@ public class EntityCell : M8.EntityBase {
         mStats = GetComponent<StatEntityController>();
         if(mStats) {
             mStats.HPChangedCallback += OnStatHPChanged;
-            mStats.StaminaChangedCallback += OnStatStaminaChanged;
+            mStats.staminaChangedCallback += OnStatStaminaChanged;
         }
     }
 

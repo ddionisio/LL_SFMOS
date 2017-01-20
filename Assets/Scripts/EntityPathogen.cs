@@ -6,18 +6,30 @@ public class EntityPathogen : M8.EntityBase {
 
     public FlockUnit flock;
 
+    public M8.Auxiliary.AuxTrigger2D seekTrigger;
+
     public StatEntityController stats { get { return mStats; } }
     public Rigidbody2D body { get { return mBody; } }
 
     private StatEntityController mStats;
     private Rigidbody2D mBody;
 
+    private StatEntityController mSeekTriggeredStatCtrl;
+    private Collider2D mSeekTriggeredColl;
+
     private Coroutine mRout;
-        
+                
     protected override void StateChanged() {
         if(mRout != null) {
             StopCoroutine(mRout);
             mRout = null;
+        }
+
+        switch((EntityState)prevState) {
+            case EntityState.Seek:
+                if(seekTrigger)
+                    seekTrigger.gameObject.SetActive(false);
+                break;
         }
 
         switch((EntityState)state) {
@@ -89,19 +101,26 @@ public class EntityPathogen : M8.EntityBase {
             StopCoroutine(mRout);
             mRout = null;
         }
-
-        if(mStats)
-            mStats.Reset();
-
+                
         if(mBody)
             mBody.simulated = false;
 
-        if(flock)
+        if(flock) {
             flock.enabled = false;
+            flock.ResetData();
+        }
+
+        if(seekTrigger)
+            seekTrigger.gameObject.SetActive(false);
+
+        mSeekTriggeredStatCtrl = null;
+        mSeekTriggeredColl = null;
     }
 
     protected override void OnSpawned(M8.GenericParams parms) {
         //populate data/state for ai, player control, etc.
+        if(mStats)
+            mStats.Reset();
 
         int toState = (int)EntityState.Normal;
 
@@ -118,7 +137,8 @@ public class EntityPathogen : M8.EntityBase {
         //dealloc here
         if(mStats) {
             mStats.HPChangedCallback -= OnStatHPChanged;
-            mStats.StaminaChangedCallback -= OnStatStaminaChanged;
+            mStats.staminaChangedCallback -= OnStatStaminaChanged;
+            mStats.signalCallback -= OnStatSignal;
         }
 
         base.OnDestroy();
@@ -131,7 +151,8 @@ public class EntityPathogen : M8.EntityBase {
         mStats = GetComponent<StatEntityController>();
         if(mStats) {
             mStats.HPChangedCallback += OnStatHPChanged;
-            mStats.StaminaChangedCallback += OnStatStaminaChanged;            
+            mStats.staminaChangedCallback += OnStatStaminaChanged;
+            mStats.signalCallback += OnStatSignal;
         }
 
         mBody = GetComponent<Rigidbody2D>();
@@ -148,13 +169,105 @@ public class EntityPathogen : M8.EntityBase {
     }
 
     IEnumerator DoSeek() {
-        yield return new WaitForSeconds(mStats.seekDelay);
+        yield return new WaitForSeconds(mStats.data.seekDelay);
 
         //request target from mission control
+        var seekTarget = MissionController.instance.RequestTarget(transform);
+                
+        if(!(flock && seekTarget)) {
+            state = (int)EntityState.Wander;
+            yield break;
+        }
 
         //set flock move target
+        flock.moveTarget = seekTarget;
+
+        mSeekTriggeredStatCtrl = null;
+        mSeekTriggeredColl = null;
 
         //activate seek trigger (to latch on anything edible)
+        if(seekTrigger)
+            seekTrigger.gameObject.SetActive(true);
+
+        //wait for triggered
+        while(!mSeekTriggeredColl)
+            yield return null;
+
+        if(seekTrigger)
+            seekTrigger.gameObject.SetActive(false);
+
+        //
+        //close in
+        Vector2 pos = transform.position;
+
+        var layerIndex = mSeekTriggeredColl.gameObject.layer;
+
+        Vector2 dir = (Vector2)mSeekTriggeredColl.transform.position - pos;
+        float dist = dir.magnitude;
+        if(dist > 0f)
+            dir /= dist;
+
+        var coll = Physics2D.Raycast(pos, dir, dist, 1<<layerIndex);
+        if(coll != mSeekTriggeredColl) {
+            state = (int)EntityState.Wander;
+            yield break;
+        }
+
+        if(mBody)
+            mBody.isKinematic = true;
+
+        if(flock)
+            flock.enabled = false;
+
+        Vector2 dest = coll.point;
+        dist = coll.distance;
+
+        var delay = dist/mStats.data.seekCloseInSpeed;
+
+        var easeFunc = DG.Tweening.Core.Easing.EaseManager.ToEaseFunction(DG.Tweening.Ease.OutCirc);
+
+        var curTime = 0f;
+        while(curTime < delay) {
+            float t = easeFunc(curTime, delay, 0f, 0f);
+
+            transform.position = Vector2.Lerp(pos, dest, t);
+
+            yield return null;
+
+            curTime += Time.deltaTime;
+        }
+
+        transform.position = dest;
+                
+        //eat away until it no longer has HP
+        if(mSeekTriggeredStatCtrl) {
+            var dmg = mStats.data.damage;
+            var atkSpd = mStats.data.attackSpeed;
+
+            //TODO: attack animation scale by attack speed
+
+            curTime = 0f;
+
+            while(mSeekTriggeredStatCtrl.isAlive) {
+                yield return null;
+
+                atkSpd = mStats.data.attackSpeed;
+
+                curTime += Time.deltaTime;
+                if(curTime >= atkSpd) {
+                    mSeekTriggeredStatCtrl.currentHP -= dmg;
+
+                    curTime = 0f;
+
+                    //TODO: attack animation scale by attack speed
+                }
+            }
+        }
+
+        mRout = null;
+
+        //wander? incubate? split?
+        mStats.currentHP = 0f;
     }
     
     void OnStatHPChanged(StatEntityController aStats, float prev) {
@@ -165,5 +278,17 @@ public class EntityPathogen : M8.EntityBase {
     void OnStatStaminaChanged(StatEntityController aStats, float prev) {
         //slow down
         //slow action rate
+    }
+
+    void OnStatSignal(StatEntityController aStats, GameObject sender, int signal, object data) {
+        switch((StatEntitySignals)signal) {
+            case StatEntitySignals.Bind:
+                //bind animation
+                break;
+
+            case StatEntitySignals.Unbind:
+                //stop bind animation
+                break;
+        }
     }
 }

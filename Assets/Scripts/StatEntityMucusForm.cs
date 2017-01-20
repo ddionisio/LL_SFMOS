@@ -33,7 +33,7 @@ public class StatEntityMucusForm : ScriptableObject {
 
     public float damageStaminaMin;
     public float damageStaminaMax;
-
+    
     public float excessRadius;
     public int excessMaxSplitCount;
 

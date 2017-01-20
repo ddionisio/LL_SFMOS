@@ -35,6 +35,8 @@ public class FlockUnitData : ScriptableObject {
     public float catchUpMinDistance; //min distance to use catchup factor
 
     public float wanderDelay;
+    public bool wanderRestrict; //don't wander off the origin point (when changed to wander state)
+    public float wanderRestrictRadius;
 
     public bool CheckAvoid(string tag) {
         for(int i = 0; i < avoidTags.Length; i++) {

@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class FlockUnit : MotionBase {
+public class FlockUnit : MonoBehaviour {
     public enum State {
         Idle, //no cohesion, move, alignment
         Move, //move toward moveTarget, will use seek if blocked
@@ -43,6 +43,7 @@ public class FlockUnit : MotionBase {
     private float mCurSeekDelay = 0;
     private float mWanderStartTime = 0;
 
+    private Rigidbody2D mBody;
     private Transform mTrans;
     
     private Vector2[] mSeekPath = null;
@@ -57,9 +58,17 @@ public class FlockUnit : MotionBase {
     private State mState = State.Move;
 
     private bool mWanderEnabled = false;
+    private Vector2 mWanderOrigin;
 
-    public override float maxSpeed { get { return data.maxSpeed; } }
-    
+    private float mMaxSpeedScale = 1.0f;
+    private float mMoveScale = 1.0f;
+
+    public float maxSpeedScale { get { return mMaxSpeedScale; } set { mMaxSpeedScale = value; } }
+
+    public Rigidbody2D body {
+        get { return mBody; }
+    }
+
     public Transform moveTarget {
         get { return mMoveTarget; }
 
@@ -82,25 +91,24 @@ public class FlockUnit : MotionBase {
     public Vector2 moveTargetDir {
         get { return mMoveTargetDir; }
     }
+        
+    public float moveScale { get { return mMoveScale; } set { mMoveScale = value; } }
 
     public virtual void Stop() {
         moveTarget = null;
         minMoveTargetDistance = 0.0f;
     }
 
-    public override void ResetData() {
-        enabled = true;
-
+    public void ResetData() {
         wanderEnabled = false;
         groupMoveEnabled = true;
         catchUpEnabled = true;
         minMoveTargetDistance = 0.0f;
         moveTarget = null;
 
-        sensor.enabled = true;
+        mMaxSpeedScale = 1.0f;
+        
         sensor.items.Clear();
-
-        base.ResetData();
     }
 
     protected virtual void OnDestroy() {
@@ -108,9 +116,9 @@ public class FlockUnit : MotionBase {
             seeker.pathCallback -= OnSeekPathComplete;
     }
 
-    protected override void Awake() {
-        base.Awake();
-        
+    protected void Awake() {
+
+        mBody = GetComponent<Rigidbody2D>();
         mTrans = transform;
 
         if(seeker)
@@ -164,12 +172,20 @@ public class FlockUnit : MotionBase {
         }
 
         //check wall        
-        mWallHit = Physics2D.CircleCast(pos, data.wallRadius, dir, 0.1f, data.wallMask.value);
-        mWallCheck = mWallHit.collider != null;
+        //mWallHit = Physics2D.CircleCast(pos, data.wallRadius, dir, 0.1f, data.wallMask.value);
+        //mWallCheck = mWallHit.collider != null;
+    }
+
+    void ApplyForce(Vector2 force) {
+        float curSpdSqr = body.velocity.sqrMagnitude;
+        float maxSpdSqr = data.maxSpeed*mMaxSpeedScale; maxSpdSqr *= maxSpdSqr;
+
+        if(curSpdSqr < maxSpdSqr)
+            body.AddForce(force);
     }
 
     // Update is called once per frame
-    protected override void FixedUpdate() {
+    protected void FixedUpdate() {
         if(mState == State.Waypoint) {
             //need to keep checking per frame if we have reached a waypoint
             Vector2 desired = mSeekPath[mSeekCurPath] - (Vector2)transform.position;
@@ -193,7 +209,7 @@ public class FlockUnit : MotionBase {
                     //continue moving to wp
                     desired.Normalize();
                     Vector2 sumForce = ComputeSeparate() + desired * (data.maxForce * data.pathFactor);
-                    body.AddForce(sumForce);
+                    ApplyForce(sumForce);
                 }
             }
         }
@@ -232,7 +248,7 @@ public class FlockUnit : MotionBase {
 
                                 mMoveTargetDir = _dir;
 
-                                sumForce += M8.MathUtil.Steer(body.velocity, _dir * maxSpeed, data.maxForce, factor);
+                                sumForce += M8.MathUtil.Steer(body.velocity, _dir * data.maxSpeed, data.maxForce, factor);
                             }
                         }
                         break;
@@ -242,7 +258,7 @@ public class FlockUnit : MotionBase {
                             WanderRefresh();
                         }
 
-                        sumForce = ComputeSeparate() + M8.MathUtil.Steer(body.velocity, mMoveTargetDir * maxSpeed, data.maxForce, data.moveToFactor);
+                        sumForce = ComputeSeparate() + M8.MathUtil.Steer(body.velocity, mMoveTargetDir * data.maxSpeed, data.maxForce, data.moveToFactor);
                         break;
 
                     default:
@@ -250,16 +266,14 @@ public class FlockUnit : MotionBase {
                         break;
                 }
 
-                body.AddForce(sumForce);
+                ApplyForce(sumForce);
             }
         }
 
         if(mWallCheck) {
             Vector2 wall = Wall();
-            body.AddForce(wall);
+            ApplyForce(wall);
         }
-
-        base.FixedUpdate();
     }
 
     void OnDrawGizmosSelected() {
@@ -277,6 +291,12 @@ public class FlockUnit : MotionBase {
 
         Gizmos.color *= 0.75f;
         Gizmos.DrawWireSphere(transform.position, data.avoidDistance);
+
+        if(data.wanderRestrict) {
+            Gizmos.color = Color.cyan;
+            Gizmos.color *= 0.75f;
+            Gizmos.DrawWireSphere(transform.position, data.wanderRestrictRadius);
+        }
     }
 
     void OnSeekPathComplete(SeekerBase aSeeker, Vector2[] p) {
@@ -326,6 +346,8 @@ public class FlockUnit : MotionBase {
 
         switch(mState) {
             case State.Wander:
+                mWanderOrigin = transform.position;
+
                 WanderRefresh();
                 break;
         }
@@ -334,12 +356,23 @@ public class FlockUnit : MotionBase {
     private void WanderRefresh() {
         mWanderStartTime = Time.fixedTime;
 
-        mMoveTargetDir = Random.onUnitSphere;
+        if(data.wanderRestrict) {
+            Vector2 curPos = transform.position;
+            Vector2 dpos = mWanderOrigin - curPos;
+            float sqrDist = dpos.sqrMagnitude;
+            if(sqrDist > data.wanderRestrictRadius*data.wanderRestrictRadius) {
+                mMoveTargetDir = dpos/Mathf.Sqrt(sqrDist);
+            }
+            else
+                mMoveTargetDir = Random.onUnitSphere;
+        }
+        else
+            mMoveTargetDir = Random.onUnitSphere;
     }
 
     //use if mWallCheck is true
     private Vector2 Wall() {
-        return M8.MathUtil.Steer(body.velocity, mWallHit.normal * maxSpeed, data.maxForce, data.wallFactor);
+        return M8.MathUtil.Steer(body.velocity, mWallHit.normal * data.maxSpeed, data.maxForce, data.wallFactor);
     }
 
     private Vector2 Seek(Vector2 target, float factor) {
@@ -348,7 +381,7 @@ public class FlockUnit : MotionBase {
         Vector2 desired = target - pos;
         desired.Normalize();
 
-        return M8.MathUtil.Steer(body.velocity, desired * maxSpeed, data.maxForce, factor);
+        return M8.MathUtil.Steer(body.velocity, desired * data.maxSpeed, data.maxForce, factor);
     }
 
     //use for idle, waypoint, etc.
@@ -400,7 +433,7 @@ public class FlockUnit : MotionBase {
                 dist = avoid.magnitude;
                 if(dist > 0) {
                     avoid /= dist;
-                    forceRet += M8.MathUtil.Steer((Vector2)body.velocity, avoid * maxSpeed, data.maxForce, data.avoidFactor);
+                    forceRet += M8.MathUtil.Steer((Vector2)body.velocity, avoid * data.maxSpeed, data.maxForce, data.avoidFactor);
                 }
             }
 
@@ -411,7 +444,7 @@ public class FlockUnit : MotionBase {
                 dist = separate.magnitude;
                 if(dist > 0) {
                     separate /= dist;
-                    forceRet += M8.MathUtil.Steer((Vector2)body.velocity, separate * maxSpeed, data.maxForce, data.separateFactor);
+                    forceRet += M8.MathUtil.Steer((Vector2)body.velocity, separate * data.maxSpeed, data.maxForce, data.separateFactor);
                 }
             }
 
@@ -488,7 +521,7 @@ public class FlockUnit : MotionBase {
                 dist = avoid.magnitude;
                 if(dist > 0) {
                     avoid /= dist;
-                    forceRet += M8.MathUtil.Steer(body.velocity, avoid * maxSpeed, data.maxForce, data.avoidFactor);
+                    forceRet += M8.MathUtil.Steer(body.velocity, avoid * data.maxSpeed, data.maxForce, data.avoidFactor);
                 }
             }
 
@@ -499,7 +532,7 @@ public class FlockUnit : MotionBase {
                 dist = separate.magnitude;
                 if(dist > 0) {
                     separate /= dist;
-                    forceRet += M8.MathUtil.Steer(body.velocity, separate * maxSpeed, data.maxForce, data.separateFactor);
+                    forceRet += M8.MathUtil.Steer(body.velocity, separate * data.maxSpeed, data.maxForce, data.separateFactor);
 
                 }
             }
@@ -510,7 +543,7 @@ public class FlockUnit : MotionBase {
                 //calculate align
                 align /= fCount;
                 align.Normalize();
-                align = M8.MathUtil.Steer(body.velocity, align * maxSpeed, data.maxForce, data.alignFactor);
+                align = M8.MathUtil.Steer(body.velocity, align * data.maxSpeed, data.maxForce, data.alignFactor);
 
                 //calculate cohesion
                 cohesion /= fCount;

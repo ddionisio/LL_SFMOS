@@ -43,6 +43,7 @@ public class EntityMucusForm : M8.EntityBase {
 
     //bind
     private StatEntityController mBoundEntityStat;
+    private Transform mDefaultParent;
 
     public void Grow() {
         SetGrow(mCurGrowthCount + 1);
@@ -131,10 +132,14 @@ public class EntityMucusForm : M8.EntityBase {
         mCurGrowthCount = 0;
 
         body.simulated = false;
+
+        mDefaultParent = null;
     }
 
     protected override void OnSpawned(M8.GenericParams parms) {
         //populate data/state for ai, player control, etc.
+
+        mDefaultParent = transform.parent;
     }
 
     protected override void OnDestroy() {
@@ -162,14 +167,18 @@ public class EntityMucusForm : M8.EntityBase {
     void SetBound(StatEntityController entStat) {
         if(mBoundEntityStat != entStat) {
             if(mBoundEntityStat != null) {
-                mBoundEntityStat.HPChangedCallback -= OnBoundEntityHPChanged;
+                mBoundEntityStat.SendSignal(gameObject, (int)StatEntitySignals.Unbind, null);
             }
 
             mBoundEntityStat = entStat;
 
             if(mBoundEntityStat != null) {
-                mBoundEntityStat.HPChangedCallback += OnBoundEntityHPChanged;
+                transform.SetParent(mBoundEntityStat.transform, true);
+
+                mBoundEntityStat.SendSignal(gameObject, (int)StatEntitySignals.Bind, null);
             }
+            else
+                transform.SetParent(mDefaultParent, true);
         }
     }
 
@@ -199,35 +208,36 @@ public class EntityMucusForm : M8.EntityBase {
 
     IEnumerator DoBound() {
         var wait = new WaitForFixedUpdate();
-
-        var dmg = stats.GetDamage(mCurGrowthCount);
-        var dmgStam = stats.GetDamageStamina(mCurGrowthCount);
-
+        
         var curHP = stats.GetHP(mCurGrowthCount);
 
-        var attack = mBoundEntityStat.attackStamina;
-        var attackDelay = mBoundEntityStat.attackStaminaPerSecond;
+        var sapDmg = mBoundEntityStat.data.damageStamina;
+        var sapAttackSpd = mBoundEntityStat.data.attackStaminaSpeed;
 
-        var curTime = 0f;
+        var sapCurTime = 0f;
+        
+        //TODO: animation
 
-        while(curHP > 0f) {
-            if(curTime >= attackDelay) {
-                curHP -= attack;
-
-                //TODO: animation
-
-                curTime = 0f;
-            }
-
+        //sap by attachee
+        while(curHP > 0f && mBoundEntityStat.isAlive) {
             yield return wait;
 
-            curTime += Time.fixedDeltaTime;
+            var dt = Time.fixedDeltaTime;
+
+            sapCurTime += dt;
+
+            //attachee breaking off
+            if(sapCurTime >= sapAttackSpd) {
+                curHP -= sapDmg;
+
+                sapCurTime -= sapAttackSpd;
+            }            
         }
 
-        //restore bound damage
-        if(mBoundEntityStat != null) {
-            mBoundEntityStat.currentHP += dmg;
-            mBoundEntityStat.currentStamina += dmgStam;
+        //restore stamina damage (if biological)
+        if(mBoundEntityStat.isAlive && mBoundEntityStat.data.type == StatEntity.Type.Biological) {
+            var dmgSta = stats.GetDamageStamina(mCurGrowthCount);
+            mBoundEntityStat.currentStamina += dmgSta;
         }
 
         state = (int)EntityState.Dead;
@@ -236,8 +246,11 @@ public class EntityMucusForm : M8.EntityBase {
     void OnTriggerEnter2D(Collider2D other) {
         if(other.CompareTag(Tags.pathogen)) {
             var pathogenStats = other.attachedRigidbody.GetComponent<StatEntityController>();
-            if(!pathogenStats)
+            if(!pathogenStats) {
+                //no stat, just die
+                state = (int)EntityState.Dead;
                 return;
+            }
 
             var pathogenPrevHP = pathogenStats.currentHP;
 
@@ -246,15 +259,13 @@ public class EntityMucusForm : M8.EntityBase {
                 return;
 
             var dmg = stats.GetDamage(mCurGrowthCount);
-            var dmgStam = stats.GetDamageStamina(mCurGrowthCount);
+            var dmgSta = stats.GetDamageStamina(mCurGrowthCount);
                         
             pathogenStats.currentHP -= dmg;
-            pathogenStats.currentStamina -= dmgStam;
+            pathogenStats.currentStamina -= dmgSta;
 
             //if pathogen still alive, bind
-            if(pathogenStats.currentHP > 0f) {
-                SetBound(pathogenStats);
-
+            if(pathogenStats.isAlive) {
                 //snap to pathogen
                 Vector2 pos = transform.position;
 
@@ -268,6 +279,7 @@ public class EntityMucusForm : M8.EntityBase {
                 var coll = Physics2D.Raycast(pos, dir, dist, 1<<layerIndex);
                 if(coll.rigidbody == other.attachedRigidbody) { //should be the same collider
                     transform.position = coll.point;
+                    SetBound(pathogenStats);
                     state = (int)EntityState.Bind;
                 }
                 else //edge case, just die
@@ -321,12 +333,6 @@ public class EntityMucusForm : M8.EntityBase {
                 state = (int)EntityState.Dead;
             }
         }
-    }
-
-    void OnBoundEntityHPChanged(StatEntityController entStat, float prev) {
-        //release when the bound entity dies
-        if(entStat.currentHP == 0f)
-            state = (int)EntityState.Dead;
     }
 
     void OnDrawGizmos() {
