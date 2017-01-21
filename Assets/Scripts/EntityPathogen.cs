@@ -2,50 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EntityPathogen : M8.EntityBase {
-
-    public FlockUnit flock;
-
+public class EntityPathogen : EntityCommon {
+        
     public M8.Auxiliary.AuxTrigger2D seekTrigger;
-
-    public StatEntityController stats { get { return mStats; } }
-    public Rigidbody2D body { get { return mBody; } }
-
-    public Transform anchor {
-        get {
-            return mAnchor;
-        }
-
-        set {
-            if(mAnchor != value) {
-                mAnchor = value;
-                if(mAnchor) {
-                    mBody.isKinematic = true; //force to kinematic
-
-                    if(mAnchorRout == null)
-                        mAnchorRout = StartCoroutine(DoAnchorUpdate());
-                }
-                else {
-                    if(mAnchorRout != null) {
-                        StopCoroutine(mAnchorRout);
-                        mAnchorRout = null;
-                    }
-                }
-            }
-        }
-    }
-
-    private StatEntityController mStats;
-    private Rigidbody2D mBody;
+    
+    private EntitySpawner mSpawner; //for carriers
 
     private StatEntityController mSeekTriggeredStatCtrl;
     private Collider2D mSeekTriggeredColl;
 
     private Coroutine mRout;
-
-    private Transform mAnchor;
-    private Coroutine mAnchorRout;
-                
+    
     protected override void StateChanged() {
         if(mRout != null) {
             StopCoroutine(mRout);
@@ -54,7 +21,7 @@ public class EntityPathogen : M8.EntityBase {
 
         switch((EntityState)prevState) {
             case EntityState.Control:
-                anchor = null; //force to detach anchor
+                anchor = null; //force to detach anchor                
                 break;
 
             case EntityState.Seek:
@@ -69,44 +36,53 @@ public class EntityPathogen : M8.EntityBase {
 
         switch((EntityState)state) {
             case EntityState.Control:
-                if(mBody) {
-                    mBody.isKinematic = true;
-                    mBody.simulated = true;
+                if(body) {
+                    body.isKinematic = true;
+                    body.simulated = true;
                 }
 
                 if(flock) {
                     flock.Stop();
                     flock.enabled = false;
                 }
+
+                if(mSpawner)
+                    mSpawner.isSpawning = false;
                 break;
 
             case EntityState.Normal:
-                if(mBody) {
-                    mBody.isKinematic = false;
-                    mBody.simulated = true;
+                if(body) {
+                    body.isKinematic = false;
+                    body.simulated = true;
                 }
 
                 if(flock)
                     flock.enabled = true;
+
+                if(mSpawner)
+                    mSpawner.isSpawning = true;
                 break;
 
             case EntityState.Wander:
-                if(mBody) {
-                    mBody.isKinematic = false;
-                    mBody.simulated = true;
+                if(body) {
+                    body.isKinematic = false;
+                    body.simulated = true;
                 }
 
                 if(flock) {
                     flock.enabled = true;
                     flock.wanderEnabled = true;
-                    flock.Stop(); 
+                    flock.Stop();
                 }
+
+                if(mSpawner)
+                    mSpawner.isSpawning = true;
                 break;
 
             case EntityState.Seek:
-                if(mBody) {
-                    mBody.isKinematic = false;
-                    mBody.simulated = true;
+                if(body) {
+                    body.isKinematic = false;
+                    body.simulated = true;
                 }
 
                 if(flock) {
@@ -121,11 +97,14 @@ public class EntityPathogen : M8.EntityBase {
             case EntityState.Dead:
                 Debug.Log("dead: "+name);
 
-                if(mBody)
-                    mBody.simulated = false;
+                if(body)
+                    body.simulated = false;
 
                 if(flock)
                     flock.enabled = false;
+
+                if(mSpawner)
+                    mSpawner.isSpawning = false;
                 break;
         }
     }
@@ -136,71 +115,43 @@ public class EntityPathogen : M8.EntityBase {
             StopCoroutine(mRout);
             mRout = null;
         }
-
-        if(mBody) {
-            mBody.velocity = Vector2.zero;
-            mBody.angularVelocity = 0f;
-            mBody.simulated = false;
-        }
-
-        anchor = null;
-        
-        if(flock) {
-            flock.enabled = false;
-            flock.ResetData();
-        }
-
+                
         if(seekTrigger)
             seekTrigger.gameObject.SetActive(false);
 
         mSeekTriggeredStatCtrl = null;
         mSeekTriggeredColl = null;
+
+        base.OnDespawned();
     }
 
-    protected override void OnSpawned(M8.GenericParams parms) {
+    /*protected override void OnSpawned(M8.GenericParams parms) {
+        base.OnSpawned(parms);
+
         //populate data/state for ai, player control, etc.
-        int toState = (int)EntityState.Normal;
-        Transform toAnchor = null;
-
-        if(parms != null) {
-            if(parms.ContainsKey(Params.state))
-                toState = parms.GetValue<int>(Params.state);
-
-            if(parms.ContainsKey(Params.anchor))
-                toAnchor = parms.GetValue<Transform>(Params.anchor);
-        }
-
+        
         //start ai, player control, etc
-        state = toState;
-        anchor = toAnchor;
-    }
+    }*/
 
     protected override void OnDestroy() {
-        //dealloc here
-        if(mStats) {
-            mStats.HPChangedCallback -= OnStatHPChanged;
-            mStats.staminaChangedCallback -= OnStatStaminaChanged;
-            mStats.signalCallback -= OnStatSignal;
+        //dealloc here        
+        if(seekTrigger) {
+            seekTrigger.enterCallback -= OnSeekTriggerEnter;
+            seekTrigger.exitCallback -= OnSeekTriggerExit;
         }
 
         base.OnDestroy();
     }
-    
+
     protected override void Awake() {
         base.Awake();
-
-        //initialize data/variables
-        mStats = GetComponent<StatEntityController>();
-        if(mStats) {
-            mStats.HPChangedCallback += OnStatHPChanged;
-            mStats.staminaChangedCallback += OnStatStaminaChanged;
-            mStats.signalCallback += OnStatSignal;
+        
+        if(seekTrigger) {
+            seekTrigger.enterCallback += OnSeekTriggerEnter;
+            seekTrigger.exitCallback += OnSeekTriggerExit;
         }
-
-        mBody = GetComponent<Rigidbody2D>();
-
-        if(flock)
-            flock.enabled = false;
+        
+        mSpawner = GetComponent<EntitySpawner>();
     }
 
     // Use this for initialization
@@ -211,11 +162,11 @@ public class EntityPathogen : M8.EntityBase {
     }
 
     IEnumerator DoSeek() {
-        yield return new WaitForSeconds(mStats.data.seekDelay);
+        yield return new WaitForSeconds(stats.data.seekDelay);
 
         //request target from mission control
         var seekTarget = MissionController.instance.RequestTarget(transform);
-                
+
         if(!(flock && seekTarget)) {
             state = (int)EntityState.Wander;
             yield break;
@@ -223,7 +174,7 @@ public class EntityPathogen : M8.EntityBase {
 
         //set flock move target
         flock.moveTarget = seekTarget;
-        flock.moveScale = mStats.data.seekFlockMoveToScale;
+        flock.moveScale = stats.data.seekFlockMoveToScale;
 
         mSeekTriggeredStatCtrl = null;
         mSeekTriggeredColl = null;
@@ -256,8 +207,8 @@ public class EntityPathogen : M8.EntityBase {
             yield break;
         }
 
-        if(mBody)
-            mBody.isKinematic = true;
+        if(body)
+            body.isKinematic = true;
 
         if(flock)
             flock.enabled = false;
@@ -265,7 +216,7 @@ public class EntityPathogen : M8.EntityBase {
         Vector2 dest = coll.point;
         dist = coll.distance;
 
-        var delay = dist/mStats.data.seekCloseInSpeed;
+        var delay = dist/stats.data.seekCloseInSpeed;
 
         var easeFunc = DG.Tweening.Core.Easing.EaseManager.ToEaseFunction(DG.Tweening.Ease.OutCirc);
 
@@ -273,7 +224,7 @@ public class EntityPathogen : M8.EntityBase {
         while(curTime < delay) {
             float t = easeFunc(curTime, delay, 0f, 0f);
 
-            mBody.MovePosition(Vector2.Lerp(pos, dest, t));
+            body.MovePosition(Vector2.Lerp(pos, dest, t));
 
             yield return null;
 
@@ -282,11 +233,11 @@ public class EntityPathogen : M8.EntityBase {
 
         transform.position = dest;
         //
-                
+
         //eat away until it no longer has HP
         if(mSeekTriggeredStatCtrl) {
-            var dmg = mStats.data.damage;
-            var atkSpd = mStats.data.attackSpeed;
+            var dmg = stats.data.damage;
+            var atkSpd = stats.data.attackSpeed;
 
             //TODO: attack animation scale by attack speed
 
@@ -295,9 +246,9 @@ public class EntityPathogen : M8.EntityBase {
             while(mSeekTriggeredStatCtrl.isAlive) {
                 yield return null;
 
-                var staScale = Mathf.Max(0.1f, mStats.currentStamina/mStats.data.stamina);
+                var staScale = Mathf.Max(0.1f, stats.currentStamina/stats.data.stamina);
 
-                atkSpd = mStats.data.attackSpeed/staScale;
+                atkSpd = stats.data.attackSpeed/staScale;
 
                 curTime += Time.deltaTime;
                 if(curTime >= atkSpd) {
@@ -313,27 +264,14 @@ public class EntityPathogen : M8.EntityBase {
         mRout = null;
 
         //wander? incubate? split?
-        mStats.currentHP = 0f;
+        stats.currentHP = 0f;
     }
 
-    IEnumerator DoAnchorUpdate() {
-        var wait = new WaitForFixedUpdate();
+    //protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
+        //base.OnStatHPChanged(aStats, prev);
+    //}
 
-        while(mAnchor) {
-            mBody.MovePosition(mAnchor.position);
-
-            yield return wait;
-        }
-
-        mAnchorRout = null;
-    }
-    
-    void OnStatHPChanged(StatEntityController aStats, float prev) {
-        if(aStats.currentHP <= 0f)
-            state = (int)EntityState.Dead;
-    }
-
-    void OnStatStaminaChanged(StatEntityController aStats, float prev) {
+    protected override void OnStatStaminaChanged(StatEntityController aStats, float prev) {
         //slow down
         //slow action rate
         float scale = aStats.currentStamina/aStats.data.stamina;
@@ -342,7 +280,7 @@ public class EntityPathogen : M8.EntityBase {
             flock.moveScale = scale;
     }
 
-    void OnStatSignal(StatEntityController aStats, GameObject sender, int signal, object data) {
+    protected override void OnStatSignal(StatEntityController aStats, GameObject sender, int signal, object data) {
         switch((StatEntitySignals)signal) {
             case StatEntitySignals.Bind:
                 //bind animation
@@ -352,5 +290,16 @@ public class EntityPathogen : M8.EntityBase {
                 //stop bind animation
                 break;
         }
+    }
+
+    void OnSeekTriggerEnter(Collider2D coll) {
+        //check if proper filter
+        if(stats.data.IsSeekValid(coll.tag))
+            mSeekTriggeredColl = coll;
+    }
+
+    void OnSeekTriggerExit(Collider2D coll) {
+        if(mSeekTriggeredColl == coll)
+            mSeekTriggeredColl = null;
     }
 }

@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EntityPathogenSpawnControl : MonoBehaviour {
+public class EntityCommonSpawnControl : MonoBehaviour {
     [Header("Launch")]
     public M8.Animator.AnimatorData animator;
     public string takeLaunch;
     public float launchDelay;
+    public EntityState launchPostState = EntityState.Seek;
 
     [Header("Follow")]
     public Transform followTarget;
@@ -24,7 +25,7 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
 
     private bool mIsLaunched;
 
-    private M8.CacheList<EntityPathogen> mSpawnedPathogens;
+    private M8.CacheList<EntityCommon> mSpawnedPathogens;
 
     //called during animation at the end, set to attack
     public void Launch() {
@@ -56,8 +57,7 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
 
                 pathogen.state = (int)EntityState.Normal;
 
-                if(pathogen.flock)
-                    pathogen.flock.moveTarget = followTarget;
+                pathogen.Follow(followTarget);
             }
         }
     }
@@ -82,7 +82,7 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
     }
 
     void Awake() {
-        mSpawnedPathogens = new M8.CacheList<EntityPathogen>(spawnAnchors.Length);
+        mSpawnedPathogens = new M8.CacheList<EntityCommon>(spawnAnchors.Length);
 
         if(entityDeathWatch)
             entityDeathWatch.releaseCallback += OnEntityDeathWatchRelease;
@@ -119,10 +119,10 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
                 yield return null;
         }
                 
-        //start seeking, no longer need to track it
+        //start post launch, no longer need to track it
         for(int i = 0; i < mSpawnedPathogens.Count; i++) {
             if(mSpawnedPathogens[i]) {
-                mSpawnedPathogens[i].state = (int)EntityState.Seek;
+                mSpawnedPathogens[i].state = (int)launchPostState;
 
                 mSpawnedPathogens[i].releaseCallback -= OnSpawnedEntityRelease; //no longer need to listen
             }

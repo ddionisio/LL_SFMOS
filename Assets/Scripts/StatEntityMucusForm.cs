@@ -36,7 +36,10 @@ public class StatEntityMucusForm : ScriptableObject {
 
     public float damageStaminaMin;
     public float damageStaminaMax;
-    
+
+    public float impactForceMin;
+    public float impactForceMax;
+
     public float excessRadius;
     public int excessMaxSplitCount;
 
@@ -50,6 +53,12 @@ public class StatEntityMucusForm : ScriptableObject {
         float t = (float)curGrowth/growthMaxCount;
 
         return Mathf.Lerp(damageStaminaMin, damageStaminaMax, t);
+    }
+
+    public float GetImpactForce(int curGrowth) {
+        float t = (float)curGrowth/growthMaxCount;
+
+        return Mathf.Lerp(impactForceMin, impactForceMax, t);
     }
 
     public float GetHP(int curGrowth) {

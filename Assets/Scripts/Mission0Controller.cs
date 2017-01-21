@@ -35,7 +35,7 @@ public class Mission0Controller : MissionController {
     public Bounds mucusFormBounds;
 
     [Header("Health")]
-    public EntityCell[] cellWalls; //when all these die, game over, man
+    public EntityCommon[] cellWalls; //when all these die, game over, man
     
     [Header("Stage Data")]
     public M8.Animator.AnimatorData animator;

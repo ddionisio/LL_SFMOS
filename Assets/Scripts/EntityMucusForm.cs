@@ -277,10 +277,20 @@ public class EntityMucusForm : M8.EntityBase {
                     dir /= dist;
 
                 var coll = Physics2D.Raycast(pos, dir, dist, 1<<layerIndex);
-                if(coll.rigidbody == other.attachedRigidbody) { //should be the same collider
+                var otherBody = other.attachedRigidbody;
+                if(coll.rigidbody == otherBody) { //should be the same collider
+                    var vel = body.velocity;
+
                     transform.position = coll.point;
                     SetBound(pathogenStats);
                     state = (int)EntityState.Bind;
+
+                    //nudge the collided body
+                    if(!otherBody.isKinematic) {
+                        var impactDir = vel.normalized;
+                        var impactForce = stats.GetImpactForce(mCurGrowthCount);
+                        otherBody.AddForceAtPosition(impactDir*impactForce, coll.point, ForceMode2D.Impulse);
+                    }
                 }
                 else //edge case, just die
                     state = (int)EntityState.Dead;
