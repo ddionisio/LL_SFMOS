@@ -51,7 +51,7 @@ public class FlockUnit : MonoBehaviour {
     private bool mSeekStarted = false;
 
     private bool mWallCheck = false;
-    private RaycastHit2D mWallHit;
+    private RaycastHit2D mWallHit = new RaycastHit2D();
 
     private float mRadius;
 

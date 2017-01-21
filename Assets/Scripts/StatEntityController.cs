@@ -14,9 +14,11 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
     public float currentHP {
         get { return mCurHP; }
         set {
-            if(mCurHP != value) {
+            var newVal = Mathf.Clamp(value, 0f, _data.HP);
+
+            if(mCurHP != newVal) {
                 var prev = mCurHP;
-                mCurHP = Mathf.Clamp(value, 0f, _data.HP);
+                mCurHP = newVal;
 
                 if(HPChangedCallback != null)
                     HPChangedCallback(this, prev);
@@ -27,9 +29,11 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
     public float currentStamina {
         get { return mCurStamina; }
         set {
-            if(mCurStamina != value) {
+            var newVal = Mathf.Clamp(value, 0f, _data.stamina);
+
+            if(mCurStamina != newVal) {
                 var prev = mCurStamina;
-                mCurStamina = Mathf.Clamp(value, 0f, _data.stamina);
+                mCurStamina = newVal;
 
                 if(staminaChangedCallback != null)
                     staminaChangedCallback(this, prev);

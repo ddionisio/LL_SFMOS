@@ -26,8 +26,7 @@ public class StatEntity : ScriptableObject {
     public float seekDelay; //for seek state
     public string seekTag;
     public float seekCloseInSpeed;
-
-    
+    public float seekFlockMoveToScale = 1.0f;
 
     public float lifeSpan; //how long before this thing just dies, 0 = infinite
         

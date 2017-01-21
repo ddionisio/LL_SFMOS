@@ -7,7 +7,9 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
     public M8.Animator.AnimatorData animator;
     public string takeLaunch;
     public float launchDelay;
-    public Transform launchFollow;
+
+    [Header("Follow")]
+    public Transform followTarget;
 
     [Header("Watch")]
     public M8.EntityBase entityDeathWatch; //if this dies, release spawned pathogens if we haven't launched
@@ -16,7 +18,7 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
     public string poolGroup;
     public string poolSpawnRef;
 
-    public Transform[] spawnAt;
+    public Transform[] spawnAnchors;
 
     private Coroutine mRout;
 
@@ -24,24 +26,38 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
 
     private M8.CacheList<EntityPathogen> mSpawnedPathogens;
 
+    //called during animation at the end, set to attack
     public void Launch() {
-        if(mIsLaunched || mRout != null) //can't launch anymore :(
+        if(mIsLaunched) //can't launch anymore :(
             return;
+
+        if(mRout != null)
+            StopCoroutine(mRout);
                 
         mRout = StartCoroutine(DoLaunch());
     }
 
     //called during animation to start following the launchFollow
     public void Follow() {
+        if(mRout != null) {
+            StopCoroutine(mRout);
+            mRout = null;
+        }
+
+        //var pool = M8.PoolController.GetPool(poolGroup);
+        //var toParent = pool.GetDefaultParent(poolSpawnRef);
+
         for(int i = 0; i < mSpawnedPathogens.Count; i++) {
             var pathogen = mSpawnedPathogens[i];
 
             //start following if it's still valid, and not dead
             if(pathogen && pathogen.state != (int)EntityState.Dead) {
+                //pathogen.transform.SetParent(toParent);
+
                 pathogen.state = (int)EntityState.Normal;
 
                 if(pathogen.flock)
-                    pathogen.flock.moveTarget = launchFollow;
+                    pathogen.flock.moveTarget = followTarget;
             }
         }
     }
@@ -53,7 +69,7 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
         }
         
         if(entityDeathWatch)
-            entityDeathWatch.setStateCallback -= OnEntityDeathWatchChangeState;
+            entityDeathWatch.releaseCallback -= OnEntityDeathWatchRelease;
 
         //clear out spawns, shouldn't be filled at this point
         for(int i = 0; i < mSpawnedPathogens.Count; i++) {
@@ -66,19 +82,23 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
     }
 
     void Awake() {
-        mSpawnedPathogens = new M8.CacheList<EntityPathogen>(spawnAt.Length);
+        mSpawnedPathogens = new M8.CacheList<EntityPathogen>(spawnAnchors.Length);
 
         if(entityDeathWatch)
-            entityDeathWatch.setStateCallback += OnEntityDeathWatchChangeState;
+            entityDeathWatch.releaseCallback += OnEntityDeathWatchRelease;
     }
         
     void Start() {
         //spawn and hold
         var parms = new M8.GenericParams();
         parms[Params.state] = (int)EntityState.Control;
+        
+        var poolGrp = M8.PoolController.GetPool(poolGroup);
 
-        for(int i = 0; i < spawnAt.Length; i++) {
-            var spawned = M8.PoolController.SpawnFromGroup<EntityPathogen>(poolGroup, poolSpawnRef, poolSpawnRef, spawnAt[i], parms);
+        for(int i = 0; i < spawnAnchors.Length; i++) {
+            parms[Params.anchor] = spawnAnchors[i];
+
+            var spawned = poolGrp.Spawn<EntityPathogen>(poolSpawnRef, poolSpawnRef, null, parms);
                         
             spawned.releaseCallback += OnSpawnedEntityRelease;
 
@@ -98,7 +118,7 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
             while(animator.isPlaying)
                 yield return null;
         }
-
+                
         //start seeking, no longer need to track it
         for(int i = 0; i < mSpawnedPathogens.Count; i++) {
             if(mSpawnedPathogens[i]) {
@@ -119,28 +139,24 @@ public class EntityPathogenSpawnControl : MonoBehaviour {
         mSpawnedPathogens.Remove((EntityPathogen)ent);
     }
 
-    void OnEntityDeathWatchChangeState(M8.EntityBase ent) {
-        switch((EntityState)ent.state) {
-            case EntityState.Dead:
-                //disperse spawned entities if we didn't get a chance to launch
-                if(!mIsLaunched) {
-                    mIsLaunched = true; //can no longer launch
+    void OnEntityDeathWatchRelease(M8.EntityBase ent) {
+        //disperse spawned entities if we didn't get a chance to launch
+        if(!mIsLaunched) {
+            mIsLaunched = true; //can no longer launch
 
-                    //set spawned pathogens to wander
-                    for(int i = 0; i < mSpawnedPathogens.Count; i++) {
-                        if(mSpawnedPathogens[i]) {
-                            if(mSpawnedPathogens[i].state != (int)EntityState.Dead)
-                                mSpawnedPathogens[i].state = (int)EntityState.Wander;
+            //set spawned pathogens to wander
+            for(int i = 0; i < mSpawnedPathogens.Count; i++) {
+                if(mSpawnedPathogens[i]) {
+                    if(mSpawnedPathogens[i].state != (int)EntityState.Dead)
+                        mSpawnedPathogens[i].state = (int)EntityState.Wander;
 
-                            mSpawnedPathogens[i].releaseCallback -= OnSpawnedEntityRelease; //no longer need to listen
-                        }
-                    }
-
-                    mSpawnedPathogens.Clear();
+                    mSpawnedPathogens[i].releaseCallback -= OnSpawnedEntityRelease; //no longer need to listen
                 }
+            }
 
-                ent.setStateCallback -= OnEntityDeathWatchChangeState;
-                break;
+            mSpawnedPathogens.Clear();
         }
+
+        ent.releaseCallback -= OnEntityDeathWatchRelease;
     }
 }

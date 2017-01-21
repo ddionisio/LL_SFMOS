@@ -11,6 +11,30 @@ public class EntityPathogen : M8.EntityBase {
     public StatEntityController stats { get { return mStats; } }
     public Rigidbody2D body { get { return mBody; } }
 
+    public Transform anchor {
+        get {
+            return mAnchor;
+        }
+
+        set {
+            if(mAnchor != value) {
+                mAnchor = value;
+                if(mAnchor) {
+                    mBody.isKinematic = true; //force to kinematic
+
+                    if(mAnchorRout == null)
+                        mAnchorRout = StartCoroutine(DoAnchorUpdate());
+                }
+                else {
+                    if(mAnchorRout != null) {
+                        StopCoroutine(mAnchorRout);
+                        mAnchorRout = null;
+                    }
+                }
+            }
+        }
+    }
+
     private StatEntityController mStats;
     private Rigidbody2D mBody;
 
@@ -18,6 +42,9 @@ public class EntityPathogen : M8.EntityBase {
     private Collider2D mSeekTriggeredColl;
 
     private Coroutine mRout;
+
+    private Transform mAnchor;
+    private Coroutine mAnchorRout;
                 
     protected override void StateChanged() {
         if(mRout != null) {
@@ -26,9 +53,17 @@ public class EntityPathogen : M8.EntityBase {
         }
 
         switch((EntityState)prevState) {
+            case EntityState.Control:
+                anchor = null; //force to detach anchor
+                break;
+
             case EntityState.Seek:
                 if(seekTrigger)
                     seekTrigger.gameObject.SetActive(false);
+
+                if(flock) {
+                    flock.moveScale = 1.0f;
+                }
                 break;
         }
 
@@ -105,6 +140,8 @@ public class EntityPathogen : M8.EntityBase {
         if(mBody)
             mBody.simulated = false;
 
+        anchor = null;
+
         if(flock) {
             flock.enabled = false;
             flock.ResetData();
@@ -127,6 +164,9 @@ public class EntityPathogen : M8.EntityBase {
         if(parms != null) {
             if(parms.ContainsKey(Params.state))
                 toState = parms.GetValue<int>(Params.state);
+
+            if(parms.ContainsKey(Params.anchor))
+                anchor = parms.GetValue<Transform>(Params.anchor);
         }
 
         //start ai, player control, etc
@@ -181,6 +221,7 @@ public class EntityPathogen : M8.EntityBase {
 
         //set flock move target
         flock.moveTarget = seekTarget;
+        flock.moveScale = mStats.data.seekFlockMoveToScale;
 
         mSeekTriggeredStatCtrl = null;
         mSeekTriggeredColl = null;
@@ -230,7 +271,7 @@ public class EntityPathogen : M8.EntityBase {
         while(curTime < delay) {
             float t = easeFunc(curTime, delay, 0f, 0f);
 
-            transform.position = Vector2.Lerp(pos, dest, t);
+            mBody.MovePosition(Vector2.Lerp(pos, dest, t));
 
             yield return null;
 
@@ -238,6 +279,7 @@ public class EntityPathogen : M8.EntityBase {
         }
 
         transform.position = dest;
+        //
                 
         //eat away until it no longer has HP
         if(mSeekTriggeredStatCtrl) {
@@ -251,7 +293,9 @@ public class EntityPathogen : M8.EntityBase {
             while(mSeekTriggeredStatCtrl.isAlive) {
                 yield return null;
 
-                atkSpd = mStats.data.attackSpeed;
+                var staScale = Mathf.Max(0.1f, mStats.currentStamina/mStats.data.stamina);
+
+                atkSpd = mStats.data.attackSpeed/staScale;
 
                 curTime += Time.deltaTime;
                 if(curTime >= atkSpd) {
@@ -269,6 +313,18 @@ public class EntityPathogen : M8.EntityBase {
         //wander? incubate? split?
         mStats.currentHP = 0f;
     }
+
+    IEnumerator DoAnchorUpdate() {
+        var wait = new WaitForFixedUpdate();
+
+        while(mAnchor) {
+            mBody.MovePosition(mAnchor.position);
+
+            yield return wait;
+        }
+
+        mAnchorRout = null;
+    }
     
     void OnStatHPChanged(StatEntityController aStats, float prev) {
         if(aStats.currentHP <= 0f)
@@ -278,6 +334,10 @@ public class EntityPathogen : M8.EntityBase {
     void OnStatStaminaChanged(StatEntityController aStats, float prev) {
         //slow down
         //slow action rate
+        float scale = aStats.currentStamina/aStats.data.stamina;
+
+        if(flock)
+            flock.moveScale = scale;
     }
 
     void OnStatSignal(StatEntityController aStats, GameObject sender, int signal, object data) {
