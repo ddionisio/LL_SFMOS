@@ -244,7 +244,7 @@ public class EntityMucusForm : M8.EntityBase {
     }
 
     void OnTriggerEnter2D(Collider2D other) {
-        if(other.CompareTag(Tags.pathogen)) {
+        if(stats.IsAttackValid(other.tag)) {
             var pathogenStats = other.attachedRigidbody.GetComponent<StatEntityController>();
             if(!pathogenStats) {
                 //no stat, just die
@@ -300,12 +300,11 @@ public class EntityMucusForm : M8.EntityBase {
 
                     //split towards near pathogens
                     Vector2 pos = transform.position;
-
-                    var layerIndex = other.gameObject.layer;
-                    var colls = Physics2D.OverlapCircleAll(other.transform.position, stats.excessRadius, 1<<layerIndex, 0f);
+                    
+                    var colls = Physics2D.OverlapCircleAll(other.transform.position, stats.excessRadius, stats.attackSplitLayerMask);
                                         
                     for(int i = 0; i < colls.Length && splitCount > 0; i++) {
-                        if(!colls[i].CompareTag(Tags.pathogen) || colls[i].attachedRigidbody == other.attachedRigidbody)
+                        if(!stats.IsAttackValid(colls[i].tag) || colls[i].attachedRigidbody == other.attachedRigidbody)
                             continue;
 
                         var dir = ((Vector2)colls[i].transform.position - pos).normalized;

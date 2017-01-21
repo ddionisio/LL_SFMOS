@@ -142,6 +142,8 @@ public class Mission0Controller : MissionController {
     public void EnterStage(int stage) {
         mCurStageInd = stage;
 
+        SendSignal(SignalType.NewStage, mCurStageInd);
+
         ApplyState(State.StageTransition);
     }
 
@@ -278,6 +280,8 @@ public class Mission0Controller : MissionController {
     IEnumerator DoVictory() {
         mucusGatherInput.isLocked = true;
 
+        SendSignal(SignalType.Complete, 0);
+
         if(!string.IsNullOrEmpty(takeVictory)) {
             animator.Play(takeVictory);
 
@@ -293,13 +297,15 @@ public class Mission0Controller : MissionController {
     IEnumerator DoDefeat() {
         mucusGatherInput.isLocked = true;
 
+        SendSignal(SignalType.Defeat, 0);
+
         if(!string.IsNullOrEmpty(takeDefeat)) {
             animator.Play(takeDefeat);
 
             while(animator.isPlaying)
                 yield return null;
         }
-
+                
         mRout = null;
 
         ProcessLose();

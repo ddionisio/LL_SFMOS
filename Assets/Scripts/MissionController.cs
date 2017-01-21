@@ -6,6 +6,9 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     public enum SignalType {
         Waiting,
         Proceed,
+        NewStage,
+        Complete,
+        Defeat,
     }
 
     public delegate void OnValueChangeCallback(int cur, int prev);

@@ -136,12 +136,15 @@ public class EntityPathogen : M8.EntityBase {
             StopCoroutine(mRout);
             mRout = null;
         }
-                
-        if(mBody)
+
+        if(mBody) {
+            mBody.velocity = Vector2.zero;
+            mBody.angularVelocity = 0f;
             mBody.simulated = false;
+        }
 
         anchor = null;
-
+        
         if(flock) {
             flock.enabled = false;
             flock.ResetData();
@@ -156,21 +159,20 @@ public class EntityPathogen : M8.EntityBase {
 
     protected override void OnSpawned(M8.GenericParams parms) {
         //populate data/state for ai, player control, etc.
-        if(mStats)
-            mStats.Reset();
-
         int toState = (int)EntityState.Normal;
+        Transform toAnchor = null;
 
         if(parms != null) {
             if(parms.ContainsKey(Params.state))
                 toState = parms.GetValue<int>(Params.state);
 
             if(parms.ContainsKey(Params.anchor))
-                anchor = parms.GetValue<Transform>(Params.anchor);
+                toAnchor = parms.GetValue<Transform>(Params.anchor);
         }
 
         //start ai, player control, etc
         state = toState;
+        anchor = toAnchor;
     }
 
     protected override void OnDestroy() {

@@ -28,6 +28,9 @@ public class StatEntityMucusForm : ScriptableObject {
     public float HPMax;
 
     [Header("Attack")]
+    public string[] attackTagFilter;
+    public LayerMask attackSplitLayerMask; //to determine which objects to split towards
+
     public float damageMin;
     public float damageMax;
 
@@ -53,5 +56,14 @@ public class StatEntityMucusForm : ScriptableObject {
         float t = (float)curGrowth/growthMaxCount;
 
         return Mathf.Lerp(HPMin, HPMax, t);
+    }
+
+    public bool IsAttackValid(string tag) {
+        for(int i = 0; i < attackTagFilter.Length; i++) {
+            if(tag == attackTagFilter[i])
+                return true;
+        }
+
+        return false;
     }
 }

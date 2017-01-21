@@ -44,7 +44,7 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
     public bool isAlive {
         get { return mActive && mCurHP > 0f; }
     }
-    
+
     public event Callback HPChangedCallback;
     public event Callback staminaChangedCallback;
     public event CallbackSignal signalCallback;
@@ -53,7 +53,7 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
     private float mCurStamina;
 
     private bool mActive;
-        
+
     public void Reset() {
         if(!_data)
             return;
@@ -81,5 +81,24 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
 
     void M8.IPoolDespawn.OnDespawned() {
         mActive = false;
+
+        Reset();
+    }
+
+    void OnDrawGizmos() {
+        if(data == null)
+            return;
+
+        if(data.splitSpawnRadius > 0f) {
+            Gizmos.color = Color.yellow;
+            Gizmos.color *= 0.3f;
+            Gizmos.DrawWireSphere(transform.position, data.splitSpawnRadius);
+        }
+
+        /*if(data.roamRadius > 0f) {
+            Gizmos.color = Color.magenta;
+            Gizmos.color *= 0.3f;
+            Gizmos.DrawWireSphere(transform.position, data.roamRadius);
+        }*/
     }
 }
