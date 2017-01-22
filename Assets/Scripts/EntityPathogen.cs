@@ -105,6 +105,10 @@ public class EntityPathogen : EntityCommon {
 
                 if(mSpawner)
                     mSpawner.isSpawning = false;
+
+                //animate
+
+                Release();
                 break;
         }
     }

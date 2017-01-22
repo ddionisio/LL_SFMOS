@@ -38,22 +38,11 @@ public interface IEntitySpawnerListener {
 }
 
 public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
-    [Header("Spawn Info")]
-    public string poolGroup;
-    public string entityRef;
-
-    [Header("Info")]
-    public int maxSpawn;
-
-    public float spawnStartDelay;
-    public float spawnDelay;
-    public float spawnFullDelay;
-
+    public EntitySpawnerData data;
+    
     public Transform spawnAt;  //Note: use up vector as dir param during spawn
     public Transform spawnTo;
-
-    public bool spawnIgnoreRotation;
-
+    
     public bool activeAtStart;
 
     //List of spawn locations to initially spawn things at start
@@ -122,7 +111,7 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
     }
 
     void Awake() {
-        mSpawnedEntities = new CacheList<EntityBase>(maxSpawn);
+        mSpawnedEntities = new CacheList<EntityBase>(data.maxSpawn);
 
         //grab listeners
         var comps = GetComponentsInChildren<MonoBehaviour>(true);
@@ -151,9 +140,9 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
     void GenerateInitialSpawns() {
         if(initialSpawnsAt != null) {
-            var pool = PoolController.GetPool(poolGroup);
+            var pool = PoolController.GetPool(data.poolGroup);
 
-            for(int i = 0; i < initialSpawnsAt.Length && mSpawnedEntities.Count < maxSpawn; i++) {
+            for(int i = 0; i < initialSpawnsAt.Length && mSpawnedEntities.Count < data.maxSpawn; i++) {
                 var pos = initialSpawnsAt[i].position; pos.z = 0f;
 
                 Spawn(pool, pos, Quaternion.identity, null);
@@ -162,26 +151,26 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
     }
 
     IEnumerator DoSpawning() {
-        var pool = PoolController.GetPool(poolGroup);
+        var pool = PoolController.GetPool(data.poolGroup);
         
-        var wait = spawnDelay > 0f ? new WaitForSeconds(spawnDelay) : null;
+        var wait = data.spawnDelay > 0f ? new WaitForSeconds(data.spawnDelay) : null;
 
         for(int i = 0; i < mListeners.Length; i++)
             mListeners[i].OnSpawnStart();
 
-        yield return new WaitForSeconds(spawnStartDelay);
+        yield return new WaitForSeconds(data.spawnStartDelay);
         
         while(mIsSpawning) {
-            bool isFull = mSpawnedEntities.Count >= maxSpawn;
+            bool isFull = mSpawnedEntities.Count >= data.maxSpawn;
             if(isFull) {
                 for(int i = 0; i < mListeners.Length; i++)
                     mListeners[i].OnSpawnFull(true);
 
-                while(mSpawnedEntities.Count >= maxSpawn)
+                while(mSpawnedEntities.Count >= data.maxSpawn)
                     yield return null;
 
                 //wait for a bit
-                yield return new WaitForSeconds(spawnFullDelay);
+                yield return new WaitForSeconds(data.spawnFullDelay);
 
                 for(int i = 0; i < mListeners.Length; i++)
                     mListeners[i].OnSpawnFull(false);
@@ -207,11 +196,11 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
             //spawn
             var spawnPos = spawnAt ? spawnAt.position : transform.position; spawnPos.z = 0f;
-            var spawnRot = spawnIgnoreRotation ? Quaternion.identity : spawnAt ? spawnAt.rotation : transform.rotation;
+            var spawnRot = data.spawnIgnoreRotation ? Quaternion.identity : spawnAt ? spawnAt.rotation : transform.rotation;
 
             Spawn(pool, spawnPos, spawnRot, mSpawnParms);
 
-            isFull = mSpawnedEntities.Count >= maxSpawn;
+            isFull = mSpawnedEntities.Count >= data.maxSpawn;
 
             //spawn end
             for(int i = 0; i < mListeners.Length; i++)
@@ -224,7 +213,7 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
     }
 
     EntityBase Spawn(PoolController pool, Vector3 spawnPos, Quaternion spawnRot, GenericParams parms) {
-        var spawned = pool.Spawn(entityRef, entityRef, spawnTo, spawnPos, spawnRot, null);
+        var spawned = pool.Spawn(data.entityRef, data.entityRef, spawnTo, spawnPos, spawnRot, null);
 
         var entity = spawned.GetComponent<EntityBase>();
         if(entity && !mSpawnedEntities.Exists(entity)) {
@@ -275,8 +264,10 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
         //Initial spawners
         if(initialSpawnsAt != null) {
-            for(int i = 0; i < initialSpawnsAt.Length; i++)
-                Gizmos.DrawSphere(initialSpawnsAt[i].position, radius);
+            for(int i = 0; i < initialSpawnsAt.Length; i++) {
+                if(initialSpawnsAt[i])
+                    Gizmos.DrawSphere(initialSpawnsAt[i].position, radius);
+            }
         }
     }
 }

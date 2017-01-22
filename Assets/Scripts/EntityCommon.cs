@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EntityCommon : M8.EntityBase {
+    public M8.Animator.AnimatorData animator;
     public FlockUnit flock;
 
     public StatEntityController stats { get { return mStats; } }

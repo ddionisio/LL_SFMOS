@@ -34,6 +34,8 @@ public class Mission0Controller : MissionController {
 
     public Bounds mucusFormBounds;
 
+    public EntitySpawner[] spawnerActivates; //activated upon calling ActivateSpawners
+
     [Header("Health")]
     public EntityCommon[] cellWalls; //when all these die, game over, man
     
@@ -100,14 +102,15 @@ public class Mission0Controller : MissionController {
 
         if(pointer)
             pointer.gameObject.SetActive(false);
+    }
 
+    IEnumerator Start() {
+        //hook stuff up after others init
         for(int i = 0; i < cellWalls.Length; i++) {
             if(cellWalls[i])
                 cellWalls[i].stats.HPChangedCallback += OnCellWallHPChanged;
         }
-    }
 
-    IEnumerator Start() {
         mucusGatherInput.isLocked = true;
 
         yield return new WaitForSeconds(beginDelay);
@@ -138,8 +141,18 @@ public class Mission0Controller : MissionController {
                 break;
         }
     }
+    
+    /// <summary>
+    /// Call this during begin animation to start up the spawners (goblet mucus spawn)
+    /// </summary>           
+    public void ActivateSpawners() {
+        for(int i = 0; i < spawnerActivates.Length; i++) {
+            if(spawnerActivates[i])
+                spawnerActivates[i].isSpawning = true;
+        }
+    }
 
-    public void EnterStage(int stage) {
+    void EnterStage(int stage) {
         mCurStageInd = stage;
 
         SendSignal(SignalType.NewStage, mCurStageInd);
@@ -182,7 +195,7 @@ public class Mission0Controller : MissionController {
     }
 
     IEnumerator DoBegin() {
-        mucusGatherInput.isLocked = true;
+        mucusGatherInput.isLocked = false;
 
         //small intro to show stuff
         if(!string.IsNullOrEmpty(takeBeginIntro)) {
@@ -192,7 +205,7 @@ public class Mission0Controller : MissionController {
                 yield return null;
         }
 
-        mucusGatherInput.isLocked = false;
+        //mucusGatherInput.isLocked = false;
 
         //free form, wait for signal via call to Progress
         mIsBeginWait = true;
@@ -202,7 +215,7 @@ public class Mission0Controller : MissionController {
         while(mIsBeginWait)
             yield return null;
 
-        mucusGatherInput.isLocked = true;
+        //mucusGatherInput.isLocked = true;
 
         if(!string.IsNullOrEmpty(takeBeginOutro)) {
             animator.Play(takeBeginOutro);
@@ -237,6 +250,12 @@ public class Mission0Controller : MissionController {
 
     IEnumerator DoStagePlay() {
         mucusGatherInput.isLocked = false;
+
+        //if for some reason we are suppose to be finished
+        if(mCurStageInd >= stages.Length - 1) {
+            ApplyState(State.Victory);
+            yield break;
+        }
 
         var curStage = stages[mCurStageInd];
         
