@@ -12,12 +12,16 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     }
 
     public delegate void OnValueChangeCallback(int cur, int prev);
-    
+    public delegate void OnValueAmountAtCallback(Vector2 worldPos, int amount);
+
     public event OnValueChangeCallback scoreChangeCallback;
+    public event OnValueAmountAtCallback scoreAtCallback;
     public event System.Action<SignalType, int> signalCallback; //listen to signals from mission control
 
     private int mCurScore;
     private M8.StatsController mStats;
+
+    public virtual int missionIndex { get { return -1; } }
         
     public int score {
         get { return mCurScore; }
@@ -34,6 +38,13 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     }
 
     public M8.StatsController stats { get { return mStats; } }
+
+    public void ScoreAt(Vector2 worldPos, int scoreAmt) {
+        score += scoreAmt;
+
+        if(scoreAtCallback != null)
+            scoreAtCallback(worldPos, scoreAmt);
+    }
 
     public void ProcessVictory() {
         MissionManager.instance.Complete(mCurScore);
@@ -63,6 +74,9 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     }
 
     protected override void OnInstanceInit() {
+        //for debug purpose to play mission scenes directly
+        MissionManager.instance.SetMission(missionIndex);
+
         mStats = GetComponent<M8.StatsController>();
     }
 }

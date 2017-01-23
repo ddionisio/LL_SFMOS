@@ -13,7 +13,7 @@ public class FlockUnit : MonoBehaviour {
 
     public FlockUnitData data;
 
-    public FlockSensor sensor;
+    public M8.SensorCollider2D sensor;
     public SeekerBase seeker; //use for when our target is blocked
         
     [System.NonSerialized]
@@ -44,6 +44,7 @@ public class FlockUnit : MonoBehaviour {
     private float mWanderStartTime = 0;
 
     private Rigidbody2D mBody;
+    private Collider2D mColl;
     private Transform mTrans;
     
     private Vector2[] mSeekPath = null;
@@ -53,7 +54,7 @@ public class FlockUnit : MonoBehaviour {
     private bool mWallCheck = false;
     private RaycastHit2D mWallHit = new RaycastHit2D();
 
-    private float mRadius;
+    private float mRadius = 0f;
 
     private State mState = State.Move;
 
@@ -67,6 +68,10 @@ public class FlockUnit : MonoBehaviour {
 
     public Rigidbody2D body {
         get { return mBody; }
+    }
+
+    public Collider2D coll {
+        get { return mColl; }
     }
 
     public Transform moveTarget {
@@ -119,13 +124,22 @@ public class FlockUnit : MonoBehaviour {
     protected void Awake() {
 
         mBody = GetComponent<Rigidbody2D>();
+        mColl = GetComponent<Collider2D>();
         mTrans = transform;
 
         if(seeker)
             seeker.pathCallback += OnSeekPathComplete;
 
-        SphereCollider sc = GetComponent<SphereCollider>();
-        mRadius = sc != null ? sc.radius : 0.0f;
+        mRadius = ComputeRadius(mColl);
+    }
+
+    float ComputeRadius(Collider2D coll) {
+        if(coll is CircleCollider2D)
+            return ((CircleCollider2D)coll).radius;
+        else {
+            var ext = coll.bounds.extents;
+            return Mathf.Max(ext.x, ext.y);
+        }
     }
 
     protected virtual void Update() {
@@ -242,6 +256,8 @@ public class FlockUnit : MonoBehaviour {
                                     && (sensor == null || numFollow == 0)
                                     && mMoveTargetDist > data.catchUpMinDistance ?
                                         data.catchUpFactor : data.moveToFactor;
+
+                                factor *= mMoveScale;
 
                                 //determine direction if distance is too close
                                 _dir /= mMoveTargetDist < minMoveTargetDistance ? -mMoveTargetDist : mMoveTargetDist;
@@ -403,13 +419,14 @@ public class FlockUnit : MonoBehaviour {
             foreach(var unit in sensor.items) {
                 if(unit != null) {
                     Vector2 otherPos = unit.transform.position;
+                    float otherRadius = ComputeRadius(unit);
 
                     dPos = pos - otherPos;
-                    dist = dPos.magnitude;
+                    dist = dPos.magnitude - otherRadius;
 
                     if(data.CheckAvoid(unit.tag)) {
                         //avoid
-                        if(dist < data.avoidDistance) {
+                        if(dist < mRadius + data.avoidDistance) {
                             dPos /= dist;
                             avoid += dPos;
                             numAvoid++;
@@ -417,7 +434,7 @@ public class FlockUnit : MonoBehaviour {
                     }
                     else {
                         //separate	
-                        if(dist < data.separateDistance) {
+                        if(dist < mRadius + data.separateDistance) {
                             dPos /= dist;
                             separate += dPos;
                             numSeparate++;
@@ -468,7 +485,7 @@ public class FlockUnit : MonoBehaviour {
             Vector2 pos = mTrans.position;
 
             Vector2 dPos;
-            float dist;
+            float dist, distOfs;
 
             int numSeparate = 0;
             int numAvoid = 0;
@@ -476,13 +493,15 @@ public class FlockUnit : MonoBehaviour {
             foreach(var unit in sensor.items) {
                 if(unit != null) {
                     Vector2 otherPos = unit.transform.position;
+                    float otherRadius = ComputeRadius(unit);
 
                     dPos = pos - otherPos;
                     dist = dPos.magnitude;
+                    distOfs = dist - otherRadius;
 
                     if(data.CheckAvoid(unit.tag)) {
                         //avoid
-                        if(dist < data.avoidDistance) {
+                        if(distOfs < mRadius + data.avoidDistance) {
                             dPos /= dist;
                             avoid += dPos;
                             numAvoid++;
@@ -490,15 +509,16 @@ public class FlockUnit : MonoBehaviour {
                     }
                     else { 
                         //separate	
-                        if(dist < data.separateDistance) {
+                        if(distOfs < mRadius + data.separateDistance) {
                             dPos /= dist;
                             separate += dPos;
                             numSeparate++;
                         }
 
                         //only follow if the same group
-                        if(unit.groupMoveEnabled && data.group == unit.data.group) {
-                            Rigidbody2D otherBody = unit.body;
+                        var otherFlockUnit = unit.GetComponent<FlockUnit>();
+                        if(otherFlockUnit && otherFlockUnit.groupMoveEnabled && data.group == otherFlockUnit.data.group) {
+                            Rigidbody2D otherBody = otherFlockUnit.body;
                             if(otherBody != null && !otherBody.isKinematic) {
                                 //align speed
                                 Vector2 vel = otherBody.velocity;

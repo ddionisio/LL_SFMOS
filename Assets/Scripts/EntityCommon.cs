@@ -8,6 +8,7 @@ public class EntityCommon : M8.EntityBase {
 
     public StatEntityController stats { get { return mStats; } }
     public Rigidbody2D body { get { return mBody; } }
+    public Collider2D coll { get { return mColl; } }
 
     public Transform anchor {
         get {
@@ -35,6 +36,7 @@ public class EntityCommon : M8.EntityBase {
 
     private StatEntityController mStats;
     private Rigidbody2D mBody;
+    private Collider2D mColl;
 
     private Transform mAnchor;
     private Coroutine mAnchorRout;
@@ -55,6 +57,9 @@ public class EntityCommon : M8.EntityBase {
             mBody.angularVelocity = 0f;
             mBody.simulated = false;
         }
+
+        if(mColl)
+            mColl.enabled = true;
 
         anchor = null;
     }
@@ -102,8 +107,12 @@ public class EntityCommon : M8.EntityBase {
 
         mBody = GetComponent<Rigidbody2D>();
 
-        if(flock)
+        if(flock) {
             flock.enabled = false;
+            mColl = flock.coll;
+        }
+        else
+            mColl = GetComponent<Collider2D>();
     }
 
     protected virtual void OnStatHPChanged(StatEntityController aStats, float prev) {

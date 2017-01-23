@@ -112,7 +112,7 @@ public class EntityPathogen : EntityCommon {
                 break;
         }
     }
-
+    
     protected override void OnDespawned() {
         //reset stuff here
         if(mRout != null) {
@@ -235,7 +235,8 @@ public class EntityPathogen : EntityCommon {
             curTime += Time.deltaTime;
         }
 
-        transform.position = dest;
+        body.MovePosition(dest);
+        body.velocity = Vector2.zero;
         //
 
         //eat away until it no longer has HP
@@ -265,10 +266,8 @@ public class EntityPathogen : EntityCommon {
             }
         }
 
-        mRout = null;
-
-        //wander? incubate? split?
-        stats.currentHP = 0f;
+        //seek again
+        RestartState();
     }
 
     //protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
@@ -298,12 +297,16 @@ public class EntityPathogen : EntityCommon {
 
     void OnSeekTriggerEnter(Collider2D coll) {
         //check if proper filter
-        if(stats.data.IsSeekValid(coll.tag))
+        if(stats.data.IsSeekValid(coll.tag)) {
             mSeekTriggeredColl = coll;
+            mSeekTriggeredStatCtrl = coll.GetComponent<StatEntityController>();
+        }
     }
 
     void OnSeekTriggerExit(Collider2D coll) {
-        if(mSeekTriggeredColl == coll)
+        if(mSeekTriggeredColl == coll) {
             mSeekTriggeredColl = null;
+            mSeekTriggeredStatCtrl = null;
+        }
     }
 }

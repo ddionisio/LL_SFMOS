@@ -35,6 +35,8 @@ public class EntityMucusForm : M8.EntityBase {
     private float mRadius = 0f;
     private int mCurGrowthCount = 0;
 
+    private float mScoreMultiplier = 1f; //multiplier to apply to damaged target
+
     private Coroutine mRout;
 
     private Vector2 mLaunchDir;
@@ -130,6 +132,7 @@ public class EntityMucusForm : M8.EntityBase {
         radius = stats.radiusStart;
 
         mCurGrowthCount = 0;
+        mScoreMultiplier = 1.0f;
 
         body.simulated = false;
 
@@ -140,6 +143,8 @@ public class EntityMucusForm : M8.EntityBase {
         //populate data/state for ai, player control, etc.
 
         mDefaultParent = transform.parent;
+
+        state = (int)EntityState.Normal;
     }
 
     protected override void OnDestroy() {
@@ -231,11 +236,11 @@ public class EntityMucusForm : M8.EntityBase {
                 curHP -= sapDmg;
 
                 sapCurTime -= sapAttackSpd;
-            }            
+            }
         }
 
-        //restore stamina damage (if biological)
-        if(mBoundEntityStat.isAlive && mBoundEntityStat.data.type == StatEntity.Type.Biological) {
+        //restore stamina damage
+        if(mBoundEntityStat.isAlive) {
             var dmgSta = stats.GetDamageStamina(mCurGrowthCount);
             mBoundEntityStat.currentStamina += dmgSta;
         }
@@ -245,14 +250,14 @@ public class EntityMucusForm : M8.EntityBase {
 
     void OnTriggerEnter2D(Collider2D other) {
         if(stats.IsAttackValid(other.tag)) {
-            var pathogenStats = other.attachedRigidbody.GetComponent<StatEntityController>();
-            if(!pathogenStats) {
+            var victimStats = other.attachedRigidbody.GetComponent<StatEntityController>();
+            if(!victimStats) {
                 //no stat, just die
                 state = (int)EntityState.Dead;
                 return;
             }
 
-            var pathogenPrevHP = pathogenStats.currentHP;
+            var pathogenPrevHP = victimStats.currentHP;
 
             //pathogen already dead, ignore
             if(pathogenPrevHP <= 0f)
@@ -260,12 +265,14 @@ public class EntityMucusForm : M8.EntityBase {
 
             var dmg = stats.GetDamage(mCurGrowthCount);
             var dmgSta = stats.GetDamageStamina(mCurGrowthCount);
-                        
-            pathogenStats.currentHP -= dmg;
-            pathogenStats.currentStamina -= dmgSta;
 
-            //if pathogen still alive, bind
-            if(pathogenStats.isAlive) {
+            var wasAlive = victimStats.isAlive;
+
+            victimStats.currentHP -= dmg;
+            victimStats.currentStamina -= dmgSta;
+
+            //if victim is still alive, bind
+            if(victimStats.isAlive && victimStats.data.type == StatEntity.Type.Biological) {
                 //snap to pathogen
                 Vector2 pos = transform.position;
 
@@ -282,7 +289,7 @@ public class EntityMucusForm : M8.EntityBase {
                     var vel = body.velocity;
 
                     transform.position = coll.point;
-                    SetBound(pathogenStats);
+                    SetBound(victimStats);
                     state = (int)EntityState.Bind;
 
                     //nudge the collided body
@@ -296,6 +303,12 @@ public class EntityMucusForm : M8.EntityBase {
                     state = (int)EntityState.Dead;
             }
             else {
+                //score
+                if(wasAlive && !victimStats.isAlive) {
+                    int score = Mathf.RoundToInt(victimStats.data.score * mScoreMultiplier);
+                    MissionController.instance.ScoreAt(victimStats.transform.position, score);
+                }
+
                 //check excess damage and split off to other pathogens
                 var excessDmg = Mathf.Round(dmg - pathogenPrevHP);
                 if(excessDmg > 0f) {
@@ -320,7 +333,8 @@ public class EntityMucusForm : M8.EntityBase {
                         var dir = ((Vector2)colls[i].transform.position - pos).normalized;
                         
                         var splitMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(poolData.group, poolData.factoryKey, name+"_split", null, pos, null);
-                        
+
+                        splitMucusForm.mScoreMultiplier = mScoreMultiplier + 1.0f;
                         splitMucusForm.SetGrow(splitGrowth);
                         splitMucusForm.Launch(dir, stats.launchForceMaxDistance, mLaunchBounds);
 

@@ -23,8 +23,10 @@ public class Mission0Controller : MissionController {
     public struct StageData {
         public int subStageCount;
         public float subStageNextDelay;
+        public float minDuration; //for stages with no pathogens
+        public GameObject activateGO;
     }
-    
+
     [Header("Mucus Gather")]
     public MucusGatherInputField mucusGatherInput;
     public MucusGather mucusGather;
@@ -38,11 +40,12 @@ public class Mission0Controller : MissionController {
 
     [Header("Health")]
     public EntityCommon[] cellWalls; //when all these die, game over, man
-    
+
     [Header("Stage Data")]
     public M8.Animator.AnimatorData animator;
 
     public float beginDelay = 1f;
+    public GameObject beginActivateGO;
 
     public string takeBeginIntro;
     public string takeBeginOutro;
@@ -54,6 +57,7 @@ public class Mission0Controller : MissionController {
 
     public StageData[] stages; //determines stage and sub stages
 
+    public string stageSpawnCheckPoolGroup; //which group to check for spawns
     public string[] stageSpawnTagChecks; //which spawned entities to check to complete a stage
 
     public float stageNextDelay = 3; //how long before the next stage transition
@@ -68,7 +72,10 @@ public class Mission0Controller : MissionController {
     private bool mIsBeginWait;
 
     private List<M8.PoolDataController> mStageSpawnChecks; //if this reaches 0 after all sub stage finishes, go to next stage
-    
+    private M8.CacheList<EntityCommon> mCellWallsAlive;
+
+    public override int missionIndex { get { return 0; } }
+
     protected override void OnInstanceDeinit() {
         base.OnInstanceDeinit();
 
@@ -81,19 +88,20 @@ public class Mission0Controller : MissionController {
 
         for(int i = 0; i < cellWalls.Length; i++) {
             if(cellWalls[i])
-                cellWalls[i].stats.HPChangedCallback -= OnCellWallHPChanged;
+                cellWalls[i].setStateCallback -= OnCellWallStateChanged;
         }
 
-        mStageSpawnChecks = new List<M8.PoolDataController>();
+        if(!string.IsNullOrEmpty(stageSpawnCheckPoolGroup)) {
+            var pool = M8.PoolController.GetPool(stageSpawnCheckPoolGroup);
+            if(pool) {
+                pool.spawnCallback -= OnSpawnEntity;
+                pool.despawnCallback -= OnDespawnEntity;
+            }
+        }
     }
 
     protected override void OnInstanceInit() {
         base.OnInstanceInit();
-
-        mucusGatherInput.pointerDownCallback += OnMucusFieldInputDown;
-        mucusGatherInput.pointerDragCallback += OnMucusFieldInputDrag;
-        mucusGatherInput.pointerUpCallback += OnMucusFieldInputUp;
-        mucusGatherInput.lockChangeCallback += OnMucusFieldInputLockChange;
 
         mIsPointerActive = false;
 
@@ -102,13 +110,37 @@ public class Mission0Controller : MissionController {
 
         if(pointer)
             pointer.gameObject.SetActive(false);
+
+        for(int i = 0; i < stages.Length; i++) {
+            if(stages[i].activateGO)
+                stages[i].activateGO.SetActive(false);
+        }
+
+        mStageSpawnChecks = new List<M8.PoolDataController>();
     }
 
     IEnumerator Start() {
         //hook stuff up after others init
+        if(!string.IsNullOrEmpty(stageSpawnCheckPoolGroup)) {
+            var pool = M8.PoolController.GetPool(stageSpawnCheckPoolGroup);
+            if(pool) {
+                pool.spawnCallback += OnSpawnEntity;
+                pool.despawnCallback += OnDespawnEntity;
+            }
+        }
+
+        mucusGatherInput.pointerDownCallback += OnMucusFieldInputDown;
+        mucusGatherInput.pointerDragCallback += OnMucusFieldInputDrag;
+        mucusGatherInput.pointerUpCallback += OnMucusFieldInputUp;
+        mucusGatherInput.lockChangeCallback += OnMucusFieldInputLockChange;
+
+        mCellWallsAlive = new M8.CacheList<EntityCommon>(cellWalls.Length);
+
         for(int i = 0; i < cellWalls.Length; i++) {
-            if(cellWalls[i])
-                cellWalls[i].stats.HPChangedCallback += OnCellWallHPChanged;
+            if(cellWalls[i]) {
+                cellWalls[i].setStateCallback += OnCellWallStateChanged;
+                mCellWallsAlive.Add(cellWalls[i]);
+            }
         }
 
         mucusGatherInput.isLocked = true;
@@ -141,7 +173,7 @@ public class Mission0Controller : MissionController {
                 break;
         }
     }
-    
+
     /// <summary>
     /// Call this during begin animation to start up the spawners (goblet mucus spawn)
     /// </summary>           
@@ -152,8 +184,27 @@ public class Mission0Controller : MissionController {
         }
     }
 
+    public override Transform RequestTarget(Transform requestor) {
+        if(mCellWallsAlive.Count <= 0)
+            return null;
+
+        var cell = mCellWallsAlive[Random.Range(0, mCellWallsAlive.Count)];
+
+        return cell ? cell.transform : null;
+    }
+
     void EnterStage(int stage) {
+        if(mCurStageInd >= 0 && mCurStageInd < stages.Length) {
+            if(stages[mCurStageInd].activateGO)
+                stages[mCurStageInd].activateGO.SetActive(false);
+        }
+
         mCurStageInd = stage;
+
+        if(mCurStageInd >= 0 && mCurStageInd < stages.Length) {
+            if(stages[mCurStageInd].activateGO)
+                stages[mCurStageInd].activateGO.SetActive(true);
+        }
 
         SendSignal(SignalType.NewStage, mCurStageInd);
 
@@ -197,6 +248,9 @@ public class Mission0Controller : MissionController {
     IEnumerator DoBegin() {
         mucusGatherInput.isLocked = false;
 
+        if(beginActivateGO)
+            beginActivateGO.SetActive(true);
+
         //small intro to show stuff
         if(!string.IsNullOrEmpty(takeBeginIntro)) {
             animator.Play(takeBeginIntro);
@@ -223,6 +277,9 @@ public class Mission0Controller : MissionController {
             while(animator.isPlaying)
                 yield return null;
         }
+
+        if(beginActivateGO)
+            beginActivateGO.SetActive(false);
 
         mRout = null;
 
@@ -252,13 +309,15 @@ public class Mission0Controller : MissionController {
         mucusGatherInput.isLocked = false;
 
         //if for some reason we are suppose to be finished
-        if(mCurStageInd >= stages.Length - 1) {
+        if(mCurStageInd >= stages.Length) {
             ApplyState(State.Victory);
             yield break;
         }
 
+        var startTime = Time.time;
+
         var curStage = stages[mCurStageInd];
-        
+
         if(curStage.subStageCount > 0) {
             var waitNextSubStage = new WaitForSeconds(curStage.subStageNextDelay);
 
@@ -278,7 +337,7 @@ public class Mission0Controller : MissionController {
         }
 
         //wait for all spawn checks to be released
-        while(mStageSpawnChecks.Count > 0)
+        while(Time.time - startTime < curStage.minDuration || mStageSpawnChecks.Count > 0)
             yield return null;
 
         //move specific entities to the left?
@@ -324,12 +383,23 @@ public class Mission0Controller : MissionController {
             while(animator.isPlaying)
                 yield return null;
         }
-                
+
         mRout = null;
 
         ProcessLose();
     }
-    
+
+    bool IsValidLaunch(Vector2 pos) {
+        if(mucusGather.Contains(pos))
+            return false;
+
+        //Vector2 dpos = pos - (Vector2)mucusGather.transform.position;
+        //if(Vector2.Angle(Vector2.up, dpos) > 200f)
+        //return false;
+
+        return true;
+    }
+
     void OnMucusFieldInputDown(MucusGatherInputField input) {
         if(input.currentAreaType == MucusGatherInputField.AreaType.Bottom) {
             mucusGather.transform.position = new Vector3(input.originPosition.x, input.originPosition.y, 0f);
@@ -341,7 +411,7 @@ public class Mission0Controller : MissionController {
         if(mucusGather.isActive) {
             var pos = input.currentPosition;
 
-            bool pointerActive = !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
+            bool pointerActive = IsValidLaunch(pos);// !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
 
             SetPointerActive(pointerActive);
 
@@ -357,16 +427,16 @@ public class Mission0Controller : MissionController {
         if(mucusGather.isActive) {
             Vector2 pos = input.currentPosition;
 
-            bool pointerActive = !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
+            bool pointerActive = IsValidLaunch(pos);// !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
 
             if(pointerActive) {
                 Vector2 sPos = mucusGather.mucusFormSpawnAt.position;
-                
+
                 var dir = pos - sPos;
                 var dist = dir.magnitude;
                 if(dist > 0f)
                     dir /= dist;
-                
+
                 mucusGather.Release(dir, dist, mucusFormBounds);
             }
             else {
@@ -382,20 +452,18 @@ public class Mission0Controller : MissionController {
         }
     }
 
-    void OnCellWallHPChanged(StatEntityController statCtrl, float prev) {
-        //check if they are all dead
-        int numDead = 0;
-        for(int i = 0; i < cellWalls.Length; i++) {
-            if(cellWalls[i]) {
-                if(!cellWalls[i].stats.isAlive)
-                    numDead++;
-            }
-            else
-                numDead++;
-        }
+    void OnCellWallStateChanged(M8.EntityBase ent) {
+        switch((EntityState)ent.state) {
+            case EntityState.Dead:
+                //remove from cache
+                mCellWallsAlive.Remove((EntityCommon)ent);
 
-        if(numDead >= cellWalls.Length)
-            ApplyState(State.Defeat);
+                Debug.Log("cell wall dead: "+ent.name);
+
+                if(mCellWallsAlive.Count <= 0)
+                    ApplyState(State.Defeat);
+                break;
+        }
     }
 
     bool CheckSpawn(M8.PoolDataController pdc) {

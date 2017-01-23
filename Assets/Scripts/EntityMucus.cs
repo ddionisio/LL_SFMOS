@@ -47,6 +47,7 @@ public class EntityMucus : M8.EntityBase {
         switch((EntityState)state) {
             case EntityState.Normal:
                 body.simulated = true;
+                body.velocity = Vector2.zero;
 
                 mRout = StartCoroutine(DoWander());
                 break;
@@ -73,6 +74,7 @@ public class EntityMucus : M8.EntityBase {
         mGatherTo = null;
         
         body.simulated = true;
+        body.velocity = Vector2.zero;
 
         mSpawnImpulseDir = Vector2.zero;
     }

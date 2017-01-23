@@ -49,7 +49,7 @@ public class EntitySpawnAt : MonoBehaviour {
             mSpawned.Spawn(parms); //manually "spawn"
         }
         else {
-            mSpawned = M8.PoolController.SpawnFromGroup<EntityCommon>(poolGroup, poolSpawnRef, poolSpawnRef, null, parms);
+            mSpawned = M8.PoolController.SpawnFromGroup<EntityCommon>(poolGroup, poolSpawnRef, poolSpawnRef, null, transform.position, parms);
             if(mSpawned)
                 mSpawned.releaseCallback += OnSpawnedReleased;
         }

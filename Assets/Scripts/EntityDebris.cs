@@ -38,6 +38,10 @@ public class EntityDebris : EntityCommon {
                 break;
 
             case EntityState.Dead:
+                if(body) {
+                    body.simulated = false;
+                }
+
                 //split if able
                 if(stats.data.canSplit) {
                     var pool = M8.PoolController.GetPool(stats.data.splitSpawnPoolGroup);

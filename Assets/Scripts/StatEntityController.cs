@@ -40,7 +40,10 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
             }
         }
     }
-
+    
+    /// <summary>
+    /// Use this instead of checking HP to check if entity is actually alive
+    /// </summary>
     public bool isAlive {
         get { return mActive && mCurHP > 0f; }
     }
@@ -51,7 +54,7 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
 
     private float mCurHP;
     private float mCurStamina;
-
+    
     private bool mActive;
 
     public void Reset() {

@@ -98,7 +98,9 @@ public class EntityCommonSpawnControl : MonoBehaviour {
         for(int i = 0; i < spawnAnchors.Length; i++) {
             parms[Params.anchor] = spawnAnchors[i];
 
-            var spawned = poolGrp.Spawn<EntityPathogen>(poolSpawnRef, poolSpawnRef, null, parms);
+            Vector2 spawnPos = spawnAnchors[i].position;
+
+            var spawned = poolGrp.Spawn<EntityPathogen>(poolSpawnRef, poolSpawnRef, null, spawnPos, parms);
                         
             spawned.releaseCallback += OnSpawnedEntityRelease;
 

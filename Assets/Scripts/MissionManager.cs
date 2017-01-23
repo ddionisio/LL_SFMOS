@@ -135,6 +135,13 @@ public class MissionManager : M8.SingletonBehaviour<MissionManager> {
         LoLManager.instance.ApplyProgress(totalComplete, totalScore);
     }
 
+    /// <summary>
+    /// For debug purposes
+    /// </summary>
+    public void SetMission(int mission) {
+        mCurMission = mission;
+    }
+
     public void CompleteQuiz(int correctCount) {
         var _mission = curMission;
 

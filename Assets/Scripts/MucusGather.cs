@@ -179,8 +179,7 @@ public class MucusGather : MonoBehaviour {
         else {
             //generate a new form
             Vector2 spawnPos = mucusFormSpawnAt.position;
-            var spawned = M8.PoolController.SpawnFromGroup(mucusFormPoolGroup, mucusFormSpawnRef, mucusFormSpawnRef, null, spawnPos, null);
-            mSpawnedMucusForm = spawned.GetComponent<EntityMucusForm>();
+            mSpawnedMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(mucusFormPoolGroup, mucusFormSpawnRef, mucusFormSpawnRef, null, spawnPos, null);
         }
 
         //check if form becomes bigger than us
