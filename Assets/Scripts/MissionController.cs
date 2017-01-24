@@ -49,7 +49,7 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     public void ProcessVictory() {
         MissionManager.instance.Complete(mCurScore);
 
-        MissionManager.instance.Victory();
+        MissionManager.instance.Quiz();
     }
 
     public void ProcessLose() {

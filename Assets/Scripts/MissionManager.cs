@@ -112,13 +112,6 @@ public class MissionManager : M8.SingletonBehaviour<MissionManager> {
 
         M8.SceneManager.instance.LoadScene(sceneNamePrefix+mCurMission+"_play");
     }
-
-    public void Victory() {
-        if(mCurMission == -1)
-            return;
-                
-        M8.SceneManager.instance.LoadScene(sceneNamePrefix+mCurMission+"_victory");
-    }
     
     public void Quiz() {
         if(mCurMission == -1)
