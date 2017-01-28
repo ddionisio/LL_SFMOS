@@ -165,7 +165,7 @@ public class Mission0Controller : MissionController {
         }
     }
 
-    public override void Signal(SignalType signal, int counter) {
+    public override void Signal(SignalType signal, object parms) {
         switch(signal) {
             case SignalType.Proceed:
                 if(mCurState == State.Begin)
@@ -336,7 +336,8 @@ public class Mission0Controller : MissionController {
             animator.Play(take);
         }
 
-        //wait for all spawn checks to be released
+        //wait for all spawn checks to be released      
+
         while(Time.time - startTime < curStage.minDuration || mStageSpawnChecks.Count > 0)
             yield return null;
 

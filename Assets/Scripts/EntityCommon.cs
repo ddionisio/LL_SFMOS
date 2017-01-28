@@ -46,6 +46,28 @@ public class EntityCommon : M8.EntityBase {
             flock.moveTarget = follow;
     }
 
+    public virtual void Leave(Transform leaveDest) {
+        if(flock)
+            flock.moveTarget = leaveDest;
+
+        state = (int)EntityState.Leave;
+    }
+
+    public virtual void Launch(Vector2 dir, float force) {
+        state = (int)EntityState.Launch;
+
+        if(flock) {
+            flock.Stop();
+            flock.enabled = false;
+        }
+
+        if(mBody) {
+            mBody.isKinematic = false;
+            mBody.simulated = true;
+            mBody.AddForce(dir*force, ForceMode2D.Impulse);
+        }
+    }
+
     protected override void OnDespawned() {
         if(flock) {
             flock.enabled = false;

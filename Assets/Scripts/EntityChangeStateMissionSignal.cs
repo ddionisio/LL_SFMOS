@@ -9,7 +9,6 @@ public class EntityChangeStateMissionSignal : MonoBehaviour {
 
     [Header("Signal")]
     public MissionController.SignalType signal;
-    public int counter;
 
     private M8.EntityBase mEnt;
 
@@ -26,7 +25,7 @@ public class EntityChangeStateMissionSignal : MonoBehaviour {
 
     void OnEntityStateChanged(M8.EntityBase ent) {
         if(mEnt.state == (int)state) {
-            MissionController.instance.Signal(signal, counter);
+            MissionController.instance.Signal(signal, null);
 
             if(once) {
                 mEnt.setStateCallback -= OnEntityStateChanged;
