@@ -2,7 +2,39 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using UnityEngine.EventSystems;
+
 public class EntityCommonSpawnLaunch : MonoBehaviour {
+    [System.Serializable]
+    public struct SpawnInfo {
+        public string entityRef;
+        public CellBindData bindData;
+    }
+
+    public class SpawnInfoGenerator {
+        private string mSpawnPoolGroup;
+        private SpawnInfo[] mSpawnInfos;
+        private int mCurIndex;
+
+        public string poolGroup { get { return mSpawnPoolGroup; } }
+
+        public SpawnInfo next {
+            get {
+                var ret = mSpawnInfos[mCurIndex];
+                mCurIndex++;
+                if(mCurIndex == mSpawnInfos.Length)
+                    mCurIndex = 0;
+                return ret;
+            }
+        }
+
+        public void Init(string aPoolGroup, SpawnInfo[] infos) {
+            mSpawnPoolGroup = aPoolGroup;
+            mSpawnInfos = infos;
+            mCurIndex = 0;
+        }
+    }
+
     public M8.Animator.AnimatorData animator;
 
     public string takeEnter;
@@ -14,41 +46,57 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
         
     public float respawnDelay; //delay after launching to respawn
 
-    
+    public event System.Action<EntityCommonSpawnLaunch, PointerEventData> dragBeginCallback;
+    public event System.Action<EntityCommonSpawnLaunch, PointerEventData> dragCallback;
+    public event System.Action<EntityCommonSpawnLaunch, PointerEventData> dragEndCallback;
 
     public EntityCommon spawnedEntity { get { return mSpawnedEntity; } }
     public GameObjectSelectible selectible { get { return mSpawnEntitySelectible; } }
     
-    public event System.Action<EntityCommonSpawnLaunch, bool> launchReadyCallback; //called when launch ready status changes
-    
-    private string mPoolGroup;
-    private string mEntityRef;
-
     private EntityCommon mSpawnedEntity;
     private GameObjectSelectible mSpawnEntitySelectible;
 
+    private SpawnInfoGenerator mSpawnInfoGen;
+
     private Coroutine mRout;
+    private Coroutine mLaunchReadyRout;
+
+    public void SetSpawnGenerator(SpawnInfoGenerator gen) {
+        mSpawnInfoGen = gen;
+    }
     
     /// <summary>
-    /// Call by mission to start with a spawn
+    /// Call by mission to start with a spawn, make sure to populate first
     /// </summary>
-    public void Spawn(string poolGroup, string entityRef) {
+    public void StartSpawn() {
         //stop current action
+        if(mLaunchReadyRout != null) {
+            StopCoroutine(mLaunchReadyRout);
+            mLaunchReadyRout = null;
+        }
+
         if(mRout != null)
             StopCoroutine(mRout);
-
+                
         animator.Stop();
 
         //clear out previous spawned
         ClearSpawned(true);
-                
-        mPoolGroup = poolGroup;
-        mEntityRef = entityRef;
+
+        if(mSpawnInfoGen == null) {
+            Debug.LogWarning("No Spawn Info Generator for: "+name);
+            return;
+        }
 
         mRout = StartCoroutine(DoSpawn());
     }
 
     public void Launch(Vector2 dir, float force) {
+        if(mLaunchReadyRout != null) {
+            StopCoroutine(mLaunchReadyRout);
+            mLaunchReadyRout = null;
+        }
+
         if(mRout != null)
             StopCoroutine(mRout);
 
@@ -62,8 +110,13 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
     void ClearSpawned(bool release) {
 
         if(mSpawnEntitySelectible) {
+            mSpawnEntitySelectible.isLocked = false;
+
             //unhook listener
             mSpawnEntitySelectible.selectCallback -= OnEntitySelect;
+            mSpawnEntitySelectible.dragBeginCallback -= OnEntityDragBegin;
+            mSpawnEntitySelectible.dragCallback -= OnEntityDrag;
+            mSpawnEntitySelectible.dragEndCallback -= OnEntityDragEnd;
 
             mSpawnEntitySelectible = null;
         }
@@ -77,8 +130,27 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
             mSpawnedEntity = null;
         }
     }
+    
+    void SetLaunchReady(bool ready) {
+        if(ready) {
+            if(mLaunchReadyRout == null)
+                mLaunchReadyRout = StartCoroutine(DoLaunchReady());
+        }
+        else {
+            if(mLaunchReadyRout != null) {
+                StopCoroutine(mLaunchReadyRout);
+                mLaunchReadyRout = null;
+            }
+
+            mSpawnedEntity.anchor = null;
+            mSpawnedEntity.state = (int)EntityState.Normal;
+            mSpawnedEntity.Follow(spawnAt);
+        }
+    }
 
     IEnumerator DoSpawn() {
+        var spawnInfo = mSpawnInfoGen.next;
+        
         animator.Play(takeEnter);
 
         //wait one frame for spawnAt to be setup
@@ -89,7 +161,10 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
         spawnParms[Params.state] = (int)EntityState.Control;
         spawnParms[Params.anchor] = spawnAt;
 
-        mSpawnedEntity = M8.PoolController.SpawnFromGroup<EntityCommon>(mPoolGroup, mEntityRef, mEntityRef, null, spawnAt.position, spawnParms);
+        mSpawnedEntity = M8.PoolController.SpawnFromGroup<EntityCommon>(mSpawnInfoGen.poolGroup, spawnInfo.entityRef, spawnInfo.entityRef, null, spawnAt.position, spawnParms);
+
+        if(mSpawnedEntity.cellBind)
+            mSpawnedEntity.cellBind.Populate(spawnInfo.bindData);
 
         mSpawnedEntity.releaseCallback += OnEntityRelease; //fail-safe
 
@@ -99,22 +174,25 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
         while(animator.isPlaying)
             yield return null;
 
-        mSpawnedEntity.state = (int)EntityState.Normal;
-        mSpawnedEntity.Follow(spawnAt);
+        SetLaunchReady(false);
 
-        //listen for select, launch
+        //listen for select, drag
         mSpawnEntitySelectible.selectCallback += OnEntitySelect;
-
+        mSpawnEntitySelectible.dragBeginCallback += OnEntityDragBegin;
+        mSpawnEntitySelectible.dragCallback += OnEntityDrag;
+        mSpawnEntitySelectible.dragEndCallback += OnEntityDragEnd;
 
         mRout = null;
     }
 
     IEnumerator DoLaunchReady() {
-        mSpawnedEntity.state = (int)EntityState.Control;
-        mSpawnedEntity.anchor = null;
+        var spawnedEntity = mSpawnedEntity;
+
+        spawnedEntity.state = (int)EntityState.Control;
+        spawnedEntity.anchor = null;
 
         //manually move towards the launch site
-        Vector2 sPos = mSpawnedEntity.transform.position;
+        Vector2 sPos = spawnedEntity.transform.position;
         Vector2 ePos = launchAt.position;
         Vector2 dPos = ePos - sPos;
 
@@ -135,15 +213,12 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
 
             float t = ease(curTime, delay, 0f, 0f);
 
-            mSpawnedEntity.body.MovePosition(Vector2.Lerp(sPos, ePos, t));
+            spawnedEntity.body.MovePosition(Vector2.Lerp(sPos, ePos, t));
         }
 
-        mSpawnedEntity.body.MovePosition(ePos);
+        spawnedEntity.body.MovePosition(ePos);
 
-        mRout = null;
-        
-        if(launchReadyCallback != null)
-            launchReadyCallback(this, true);
+        mLaunchReadyRout = null;
     }
 
     IEnumerator DoLaunch(Vector2 dir, float force) {
@@ -151,6 +226,10 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
 
         ClearSpawned(false);
 
+        //wait for launch ready to end
+        while(mLaunchReadyRout != null)
+            yield return null;
+                
         spawnedEntity.Launch(dir, force);
 
         //wait a bit to respawn
@@ -158,7 +237,7 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
 
         mRout = null;
 
-        Spawn(mPoolGroup, mEntityRef);
+        StartSpawn();
     }
 
     void OnEntityRelease(M8.EntityBase ent) {
@@ -169,26 +248,36 @@ public class EntityCommonSpawnLaunch : MonoBehaviour {
             StopCoroutine(mRout);
             mRout = null;
         }
+
+        if(mLaunchReadyRout != null) {
+            StopCoroutine(mLaunchReadyRout);
+            mLaunchReadyRout = null;
+        }
     }
     
     void OnEntitySelect(GameObjectSelectible entLaunch) {
-        if(entLaunch.isSelected) {
-            if(mRout == null)
-                mRout = StartCoroutine(DoLaunchReady());
-        }
-        else {
+        if(!entLaunch.isSelected) {
             if(mRout != null) {
                 StopCoroutine(mRout);
                 mRout = null;
             }
-
-            mSpawnedEntity.anchor = null;
-
-            mSpawnedEntity.state = (int)EntityState.Normal;
-            mSpawnedEntity.Follow(spawnAt);
-
-            if(launchReadyCallback != null)
-                launchReadyCallback(this, false);
         }
+
+        SetLaunchReady(entLaunch.isSelected);
+    }
+
+    void OnEntityDragBegin(GameObjectSelectible entLaunch, PointerEventData dat) {
+        if(dragBeginCallback != null)
+            dragBeginCallback(this, dat);
+    }
+
+    void OnEntityDrag(GameObjectSelectible entLaunch, PointerEventData dat) {
+        if(dragCallback != null)
+            dragCallback(this, dat);
+    }
+
+    void OnEntityDragEnd(GameObjectSelectible entLaunch, PointerEventData dat) {
+        if(dragEndCallback != null)
+            dragEndCallback(this, dat);
     }
 }

@@ -18,7 +18,19 @@ public class Mission1Controller : MissionController {
     [System.Serializable]
     public struct StageData {
         public GameObject activateGO;
+
+        public EntityCommonSpawnLaunch.SpawnInfo[] spawnInfos;
     }
+
+    public EntityCommonInputLaunchField launchField;
+
+    [Header("Stage Transition Data")]
+    public M8.Animator.AnimatorData transitionAnimator;
+
+    public string takeStageTransitionBegin; //open up
+    public string takeStageTransitionEnd; //after play starts, close up
+
+    public float transitionBeginDelay = 0.3f;
 
     [Header("Stage Data")]
     public M8.Animator.AnimatorData animator;
@@ -28,10 +40,10 @@ public class Mission1Controller : MissionController {
 
     public string takeBeginIntro;
     public string takeBeginOutro;
-
-    public string takeStageTransition; //do some woosh thing towards left
-
+        
     public string takeFinish;
+
+    public string stageSpawnLaunchPoolGroup;
 
     public StageData[] stages; //determines stage and sub stages
 
@@ -196,12 +208,10 @@ public class Mission1Controller : MissionController {
 
         //apply progress animation to HUD
 
-        if(!string.IsNullOrEmpty(takeStageTransition)) {
-            animator.Play(takeStageTransition);
+        if(transitionAnimator && !string.IsNullOrEmpty(takeStageTransitionBegin))
+            transitionAnimator.Play(takeStageTransitionBegin);
 
-            while(animator.isPlaying)
-                yield return null;
-        }
+        yield return new WaitForSeconds(transitionBeginDelay);
 
         mRout = null;
 
@@ -216,7 +226,7 @@ public class Mission1Controller : MissionController {
             yield break;
         }
         
-        //var curStage = stages[mCurStageInd];
+        var curStage = stages[mCurStageInd];
 
         //entry/spawn
         int takeInd = animator.GetTakeIndex("stage_"+mCurStageInd);
@@ -226,6 +236,14 @@ public class Mission1Controller : MissionController {
             while(animator.isPlaying)
                 yield return null;
         }
+
+        if(transitionAnimator && !string.IsNullOrEmpty(takeStageTransitionEnd))
+            transitionAnimator.Play(takeStageTransitionEnd);
+
+        //prep spawners and start it
+        launchField.PopulateSpawners(stageSpawnLaunchPoolGroup, curStage.spawnInfos);
+
+        launchField.StartSpawners();
 
         //ready to play
 

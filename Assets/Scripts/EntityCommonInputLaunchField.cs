@@ -4,8 +4,7 @@ using UnityEngine;
 
 using UnityEngine.EventSystems;
 
-public class EntityCommonInputLaunchField : MonoBehaviour,
-    IPointerClickHandler, IPointerEnterHandler {
+public class EntityCommonInputLaunchField : MonoBehaviour {
 
     public EntityCommonSpawnLaunch[] spawnLaunches;
         
@@ -21,7 +20,8 @@ public class EntityCommonInputLaunchField : MonoBehaviour,
     public float launchForceMaxDistance = 4.0f;
     public AnimationCurve launchForceCurve;
 
-    private PointerEventData mLastPointerEventEnter;
+    private EntityCommonSpawnLaunch.SpawnInfoGenerator mSpawnGen;
+
     private EntityCommonSpawnLaunch mCurSpawnLauncherReady;
 
     private Coroutine mRout;
@@ -32,15 +32,21 @@ public class EntityCommonInputLaunchField : MonoBehaviour,
 
     void OnDestroy() {
         for(int i = 0; i < spawnLaunches.Length; i++) {
-            if(spawnLaunches[i])
-                spawnLaunches[i].launchReadyCallback -= OnSpawnLauncherReady;
+            if(spawnLaunches[i]) {
+                spawnLaunches[i].dragBeginCallback -= OnSpawnLauncherDragBegin;
+                spawnLaunches[i].dragCallback -= OnSpawnLauncherDrag;
+                spawnLaunches[i].dragEndCallback -= OnSpawnLauncherDragEnd;
+            }
         }
     }
 
     void Awake() {
         for(int i = 0; i < spawnLaunches.Length; i++) {
-            if(spawnLaunches[i])
-                spawnLaunches[i].launchReadyCallback += OnSpawnLauncherReady;
+            if(spawnLaunches[i]) {
+                spawnLaunches[i].dragBeginCallback += OnSpawnLauncherDragBegin;
+                spawnLaunches[i].dragCallback += OnSpawnLauncherDrag;
+                spawnLaunches[i].dragEndCallback += OnSpawnLauncherDragEnd;
+            }
         }
 
         if(pointerGO)
@@ -48,6 +54,8 @@ public class EntityCommonInputLaunchField : MonoBehaviour,
 
         if(pointer)
             pointer.gameObject.SetActive(false);
+
+        mSpawnGen = new EntityCommonSpawnLaunch.SpawnInfoGenerator();
     }
 
     void SetPointerActive(bool active) {
@@ -62,72 +70,68 @@ public class EntityCommonInputLaunchField : MonoBehaviour,
         }
     }
 
+    public void PopulateSpawners(string poolGroup, EntityCommonSpawnLaunch.SpawnInfo[] spawnInfos) {
+        mSpawnGen.Init(poolGroup, spawnInfos);
+
+        for(int i = 0; i < spawnLaunches.Length; i++) {
+            if(spawnLaunches[i])
+                spawnLaunches[i].SetSpawnGenerator(mSpawnGen);
+        }
+    }
+
+    public void StartSpawners() {
+        for(int i = 0; i < spawnLaunches.Length; i++) {
+            if(spawnLaunches[i])
+                spawnLaunches[i].StartSpawn();
+        }
+    }
+
     public float GetLaunchForce() {
         float t = Mathf.Clamp01(launchForceCurve.Evaluate(Mathf.Clamp01((mLastDist - launchRadiusMin)/launchForceMaxDistance)));
         return Mathf.Lerp(launchForceMin, launchForceMax, t);
     }
+    
+    void OnSpawnLauncherDragBegin(EntityCommonSpawnLaunch launcher, PointerEventData dat) {
+        mCurSpawnLauncherReady = launcher;
+    }
 
-    void OnSpawnLauncherReady(EntityCommonSpawnLaunch launcher, bool ready) {
-        if(ready) {
-            mCurSpawnLauncherReady = launcher;
+    void OnSpawnLauncherDrag(EntityCommonSpawnLaunch launcher, PointerEventData dat) {
+        if(mCurSpawnLauncherReady != launcher)
+            return;
 
-            SetPointerActive(true);
+        Vector2 pos = dat.pointerPressRaycast.worldPosition;
+        Vector2 pointerPos = pointer.position;
 
-            if(mRout == null) {
-                mRout = StartCoroutine(DoLaunchMouseOver());
-            }
-        }
-        else {
-            if(mCurSpawnLauncherReady == launcher) {
-                mCurSpawnLauncherReady = null;
+        mLastDir = pos - pointerPos;
+        mLastDist = mLastDir.magnitude;
+        if(mLastDist > 0f)
+            mLastDir /= mLastDist;
 
-                SetPointerActive(false);
+        bool valid = Vector2.Angle(Vector2.up, mLastDir) <= launchAngleLimit && mLastDist >= launchRadiusMin;
 
-                if(mRout != null) {
-                    StopCoroutine(mRout);
-                    mRout = null;
-                }
-            }
+        SetPointerActive(valid);
+
+        if(valid) {
+            pointer.position = dat.pointerPressRaycast.worldPosition;
         }
     }
 
-    void IPointerClickHandler.OnPointerClick(PointerEventData eventData) {
-        if(mCurSpawnLauncherReady && mIsPointerActive) {
+    void OnSpawnLauncherDragEnd(EntityCommonSpawnLaunch launcher, PointerEventData dat) {
+        if(mCurSpawnLauncherReady != launcher)
+            return;
+
+        //launch
+        if(mIsPointerActive) {
+            SetPointerActive(false);
+
             mCurSpawnLauncherReady.Launch(mLastDir, GetLaunchForce());
         }
+                
+        mCurSpawnLauncherReady = null;
     }
     
-    void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData) {
-        mLastPointerEventEnter = eventData;
-    }
-
-    IEnumerator DoLaunchMouseOver() {
-        while(mCurSpawnLauncherReady) {
-            //launchAngleLimit
-            Vector2 pos = mLastPointerEventEnter.pointerPressRaycast.worldPosition;
-            Vector2 pointerPos = pointer.position;
-
-            mLastDir = pos - pointerPos;
-            mLastDist = mLastDir.magnitude;
-            if(mLastDist > 0f)
-                mLastDir /= mLastDist;
-
-            bool valid = mLastPointerEventEnter != null && Vector2.Angle(Vector2.up, mLastDir) <= launchAngleLimit && mLastDist >= launchRadiusMin;
-
-            SetPointerActive(valid);
-
-            if(valid) {
-                pointer.position = mLastPointerEventEnter.pointerPressRaycast.worldPosition;
-            }
-
-            yield return null;
-        }
-
-        mRout = null;
-    }
-
     void OnDrawGizmos() {
-        var bound = new Bounds();
+        /*var bound = new Bounds();
         BoxCollider2D bc2D = GetComponent<BoxCollider2D>();
         if(bc2D != null) {
             bound.center = bc2D.offset;
@@ -138,7 +142,7 @@ public class EntityCommonInputLaunchField : MonoBehaviour,
             Gizmos.color = Color.blue;
 
             Gizmos.DrawWireCube(transform.position + bound.center, bound.size);
-        }
+        }*/
 
         if(launchPoint && launchRadiusMin > 0f) {
             Gizmos.color = Color.cyan;

@@ -7,6 +7,7 @@ public class EntityCommon : M8.EntityBase {
     public FlockUnit flock;
 
     public StatEntityController stats { get { return mStats; } }
+    public CellBindController cellBind { get { return mCellBind; } }
     public Rigidbody2D body { get { return mBody; } }
     public Collider2D coll { get { return mColl; } }
 
@@ -35,6 +36,7 @@ public class EntityCommon : M8.EntityBase {
     }
 
     private StatEntityController mStats;
+    private CellBindController mCellBind;
     private Rigidbody2D mBody;
     private Collider2D mColl;
 
@@ -49,6 +51,9 @@ public class EntityCommon : M8.EntityBase {
     public virtual void Leave(Transform leaveDest) {
         if(flock)
             flock.moveTarget = leaveDest;
+
+        if(mColl)
+            mColl.enabled = false;
 
         state = (int)EntityState.Leave;
     }
@@ -82,6 +87,9 @@ public class EntityCommon : M8.EntityBase {
 
         if(mColl)
             mColl.enabled = true;
+
+        if(mCellBind)
+            mCellBind.Deinit();
 
         anchor = null;
     }
@@ -126,6 +134,8 @@ public class EntityCommon : M8.EntityBase {
             mStats.staminaChangedCallback += OnStatStaminaChanged;
             mStats.signalCallback += OnStatSignal;
         }
+
+        mCellBind = GetComponent<CellBindController>();
 
         mBody = GetComponent<Rigidbody2D>();
 
