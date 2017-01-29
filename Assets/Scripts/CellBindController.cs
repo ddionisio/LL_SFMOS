@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class CellBindController : MonoBehaviour {
+    public CellBindData.Type bindType; //what type of bind this entity presents (e.g. phagocytes = MHC2, cells = MHC1, pathogens = Epitope)
+    public CellBindData.Type bindFilter; //what type of bind this entity can attach to
+
     public SpriteRenderer[] spriteTints;
     public SpriteRenderer[] spriteShapes;
     public SpriteRenderer[] spriteIcons;

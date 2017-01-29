@@ -5,6 +5,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "cellBind", menuName = "Stats/Cell Bind")]
 public class CellBindData : ScriptableObject {
     public enum Type {
+        None,
         Epitope, //part of antigen
         MHC1, //antigen presentation of cells
         MHC2 //antigen presentation of phagocytes

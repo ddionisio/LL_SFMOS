@@ -46,7 +46,7 @@ public class StatEntity : ScriptableObject {
     public float roamForceMax;
     public float roamChangeDelayMin;
     public float roamChangeDelayMax;
-
+    
     public bool canSplit {
         get { return !string.IsNullOrEmpty(splitSpawnPoolGroup) && splitSpawnPoolEntityTypes.Length > 0; }
     }
