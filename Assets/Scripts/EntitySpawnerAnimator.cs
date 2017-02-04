@@ -30,6 +30,13 @@ public class EntitySpawnerAnimator : MonoBehaviour, IEntitySpawnerListener {
     }
 
     void IEntitySpawnerListener.OnSpawnStart() {
+        if(mTakeIdleInd == -1)
+            return;
+
+        animator.Play(mTakeIdleInd);
+    }
+
+    void IEntitySpawnerListener.OnSpawnReady() {
         if(mTakeSpawningInd == -1)
             return;
 

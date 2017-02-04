@@ -18,7 +18,7 @@ public class EntityPathogen : EntityCommon {
             StopCoroutine(mRout);
             mRout = null;
         }
-
+                
         switch((EntityState)prevState) {
             case EntityState.Control:
                 anchor = null; //force to detach anchor                
@@ -31,6 +31,8 @@ public class EntityPathogen : EntityCommon {
                 if(flock) {
                     flock.moveScale = 1.0f;
                 }
+
+                ClearSeek();
                 break;
         }
 
@@ -115,16 +117,12 @@ public class EntityPathogen : EntityCommon {
     
     protected override void OnDespawned() {
         //reset stuff here
-        if(mRout != null) {
-            StopCoroutine(mRout);
-            mRout = null;
-        }
-                
+        mRout = null;
+
         if(seekTrigger)
             seekTrigger.gameObject.SetActive(false);
 
-        mSeekTriggeredStatCtrl = null;
-        mSeekTriggeredColl = null;
+        ClearSeek();
 
         base.OnDespawned();
     }
@@ -141,7 +139,6 @@ public class EntityPathogen : EntityCommon {
         //dealloc here        
         if(seekTrigger) {
             seekTrigger.enterCallback -= OnSeekTriggerEnter;
-            seekTrigger.exitCallback -= OnSeekTriggerExit;
         }
 
         base.OnDestroy();
@@ -152,7 +149,6 @@ public class EntityPathogen : EntityCommon {
         
         if(seekTrigger) {
             seekTrigger.enterCallback += OnSeekTriggerEnter;
-            seekTrigger.exitCallback += OnSeekTriggerExit;
         }
         
         mSpawner = GetComponent<EntitySpawner>();
@@ -163,6 +159,30 @@ public class EntityPathogen : EntityCommon {
         base.Start();
 
         //initialize variables from other sources (for communicating with managers, etc.)
+    }
+    
+    void ApplySeekFromCollider(Collider2D coll) {
+        if(coll && coll != mSeekTriggeredColl) {
+            if(stats.data.IsSeekValid(coll.tag)) {
+                //unbind prev.
+                if(mSeekTriggeredStatCtrl)
+                    mSeekTriggeredStatCtrl.SendSignal(gameObject, (int)StatEntitySignals.Unbind, null);
+
+                mSeekTriggeredColl = coll;
+                mSeekTriggeredStatCtrl = coll.GetComponent<StatEntityController>();
+            }
+        }
+    }
+
+    void ClearSeek() {
+        if(mSeekTriggeredStatCtrl) {
+            if(mSeekTriggeredStatCtrl.isAlive)
+                mSeekTriggeredStatCtrl.SendSignal(gameObject, (int)StatEntitySignals.Unbind, null);
+
+            mSeekTriggeredStatCtrl = null;
+        }
+
+        mSeekTriggeredColl = null;
     }
 
     IEnumerator DoSeek() {
@@ -180,8 +200,7 @@ public class EntityPathogen : EntityCommon {
         flock.moveTarget = seekTarget;
         flock.moveScale = stats.data.seekFlockMoveToScale;
 
-        mSeekTriggeredStatCtrl = null;
-        mSeekTriggeredColl = null;
+        ClearSeek();
 
         //activate seek trigger (to latch on anything edible)
         if(seekTrigger)
@@ -241,6 +260,9 @@ public class EntityPathogen : EntityCommon {
 
         //eat away until it no longer has HP
         if(mSeekTriggeredStatCtrl) {
+            //bind signal
+            mSeekTriggeredStatCtrl.SendSignal(gameObject, (int)StatEntitySignals.Bind, null);
+
             var dmg = stats.data.damage;
             var atkSpd = stats.data.attackSpeed;
 
@@ -267,7 +289,9 @@ public class EntityPathogen : EntityCommon {
         }
 
         //seek again
-        RestartState();
+        //RestartState();
+        //start repro?
+        state = (int)EntityState.Normal;
     }
 
     //protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
@@ -296,17 +320,8 @@ public class EntityPathogen : EntityCommon {
     }
 
     void OnSeekTriggerEnter(Collider2D coll) {
-        //check if proper filter
-        if(stats.data.IsSeekValid(coll.tag)) {
-            mSeekTriggeredColl = coll;
-            mSeekTriggeredStatCtrl = coll.GetComponent<StatEntityController>();
-        }
-    }
-
-    void OnSeekTriggerExit(Collider2D coll) {
-        if(mSeekTriggeredColl == coll) {
-            mSeekTriggeredColl = null;
-            mSeekTriggeredStatCtrl = null;
-        }
+        //only apply if there's no current seek
+        if(!mSeekTriggeredColl)
+            ApplySeekFromCollider(coll);
     }
 }

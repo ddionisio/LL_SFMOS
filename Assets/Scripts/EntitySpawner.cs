@@ -6,9 +6,14 @@ using UnityEngine;
 
 public interface IEntitySpawnerListener {
     /// <summary>
-    /// Called upon activation, or while active and no longer full
+    /// Called upon activation, waiting for spawn ready
     /// </summary>
     void OnSpawnStart();
+
+    /// <summary>
+    /// Called when ready to spawn
+    /// </summary>
+    void OnSpawnReady();
 
     /// <summary>
     /// Called when about to spawn
@@ -155,11 +160,18 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
         
         var wait = data.spawnDelay > 0f ? new WaitForSeconds(data.spawnDelay) : null;
 
-        for(int i = 0; i < mListeners.Length; i++)
-            mListeners[i].OnSpawnStart();
+        var startDelay = UnityEngine.Random.Range(data.spawnStartDelayMin, data.spawnStartDelayMax);
 
-        yield return new WaitForSeconds(data.spawnStartDelay);
-        
+        if(startDelay > 0f) {
+            for(int i = 0; i < mListeners.Length; i++)
+                mListeners[i].OnSpawnStart();
+
+            yield return new WaitForSeconds(UnityEngine.Random.Range(data.spawnStartDelayMin, data.spawnStartDelayMax));
+        }
+
+        for(int i = 0; i < mListeners.Length; i++)
+            mListeners[i].OnSpawnReady();
+
         while(mIsSpawning) {
             bool isFull = mSpawnedEntities.Count >= data.maxSpawn;
             if(isFull) {
@@ -246,7 +258,7 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
         if(mSpawningRout != null) {
             for(int i = 0; i < mListeners.Length; i++)
-                mListeners[i].OnSpawnStart();
+                mListeners[i].OnSpawnReady();
         }
     }
 
