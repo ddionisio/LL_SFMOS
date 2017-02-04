@@ -21,6 +21,15 @@ public class EntitySpawnerAnimator : MonoBehaviour, IEntitySpawnerListener {
     private int mTakeSpawningInd = -1;
     private int mTakeSpawnInd = -1;
 
+    private bool mIsSpawnReady = false;
+
+    /// <summary>
+    /// Call by animator when ready to spawn
+    /// </summary>
+    public void Fire() {
+        mIsSpawnReady = true;
+    }
+
     void Awake() {
         if(animator) {
             mTakeIdleInd = animator.GetTakeIndex(_takeIdle);
@@ -44,6 +53,8 @@ public class EntitySpawnerAnimator : MonoBehaviour, IEntitySpawnerListener {
     }
 
     void IEntitySpawnerListener.OnSpawnBegin() {
+        mIsSpawnReady = false;
+
         if(mTakeSpawnInd == -1)
             return;
 
@@ -54,14 +65,18 @@ public class EntitySpawnerAnimator : MonoBehaviour, IEntitySpawnerListener {
         if(mTakeSpawnInd == -1)
             return true;
 
-        return animator.currentPlayingTakeIndex != mTakeSpawnInd || !animator.isPlaying;
+        return mIsSpawnReady; //animator.currentPlayingTakeIndex != mTakeSpawnInd || !animator.isPlaying;
+    }
+
+    bool IEntitySpawnerListener.OnSpawningFinish() {
+        return !animator.isPlaying;
     }
 
     void IEntitySpawnerListener.OnSpawnEnd() {
-        if(mTakeSpawningInd == -1)
+        if(mTakeIdleInd == -1)
             return;
 
-        animator.Play(mTakeSpawningInd);
+        animator.Play(mTakeIdleInd);
     }
 
     void IEntitySpawnerListener.OnSpawnStop() {
@@ -69,20 +84,5 @@ public class EntitySpawnerAnimator : MonoBehaviour, IEntitySpawnerListener {
             return;
 
         animator.Play(mTakeIdleInd);
-    }
-
-    void IEntitySpawnerListener.OnSpawnFull(bool full) {
-        if(full) {
-            if(mTakeIdleInd == -1)
-                return;
-
-            animator.Play(mTakeIdleInd);
-        }
-        else {
-            if(mTakeSpawningInd == -1)
-                return;
-
-            animator.Play(mTakeSpawningInd);
-        }
     }
 }

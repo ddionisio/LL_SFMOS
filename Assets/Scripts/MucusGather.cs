@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class MucusGather : MonoBehaviour {
+    public GameObject gatherDisplayRoot;
+
     public CircleCollider2D sphereCollider;
 
     public Transform mucusFormSpawnAt;
@@ -53,6 +55,8 @@ public class MucusGather : MonoBehaviour {
 
         sphereCollider.enabled = true;
 
+        if(gatherDisplayRoot) gatherDisplayRoot.SetActive(true);
+
         //play active
         if(animator && mTakeActivateInd != -1)
             animator.Play(mTakeActivateInd);
@@ -91,6 +95,7 @@ public class MucusGather : MonoBehaviour {
         //launch mucus form if available
         if(mSpawnedMucusForm) {
             mSpawnedMucusForm.Launch(dir, dist, bounds);
+
             mSpawnedMucusForm = null;
         }
 
@@ -173,6 +178,15 @@ public class MucusGather : MonoBehaviour {
     void Grow() {
         if(mSpawnedMucusForm) {
             mSpawnedMucusForm.Grow();
+
+            //full?
+            if(mSpawnedMucusForm.currentGrowthCount >= mSpawnedMucusForm.stats.growthMaxCount) {
+                if(animator)
+                    animator.Stop();
+
+                if(gatherDisplayRoot)
+                    gatherDisplayRoot.SetActive(false);
+            }
 
             //Debug.Log("growth count: "+mSpawnedMucusForm.currentGrowthCount);
         }

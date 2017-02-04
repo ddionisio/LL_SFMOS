@@ -14,7 +14,9 @@ public class EntitySpawnerData : ScriptableObject {
     public float spawnStartDelayMin;
     public float spawnStartDelayMax;
 
-    public float spawnDelay;
+    public float spawnDelayMin;
+    public float spawnDelayMax;
+
     public float spawnFullDelay;
         
     public bool spawnIgnoreRotation;

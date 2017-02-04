@@ -8,8 +8,19 @@ public class StatEntityMucusForm : ScriptableObject {
     public float radiusStart;
     public float radiusEnd;
 
+    public float radiusToRootScaleStart;
+    public float radiusToRootScaleEnd;
+
+    [Header("Takes")]
+    public string takeNormal;
+    public string takeGrow;
+    public string takeLaunch;
+    public string takeBind;
+    public string takeDeath;
+
     [Header("Growth")]
     public int growthMaxCount;
+    public float growthDelay = 0.5f;
 
     [Header("Launch")]
     public float launchForceMin;

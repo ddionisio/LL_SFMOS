@@ -27,7 +27,13 @@ public interface IEntitySpawnerListener {
     bool OnSpawning();
 
     /// <summary>
-    /// Called after spawning
+    /// Callled until returns true, then ready to spawn again
+    /// </summary>
+    /// <returns></returns>
+    bool OnSpawningFinish();
+
+    /// <summary>
+    /// Called when full
     /// </summary>
     void OnSpawnEnd();
 
@@ -35,11 +41,6 @@ public interface IEntitySpawnerListener {
     /// Called when spawn is deactivated
     /// </summary>
     void OnSpawnStop();
-
-    /// <summary>
-    /// Called when spawn becomes full, then when we are no longer full
-    /// </summary>
-    void OnSpawnFull(bool full);
 }
 
 public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
@@ -158,8 +159,6 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
     IEnumerator DoSpawning() {
         var pool = PoolController.GetPool(data.poolGroup);
         
-        var wait = data.spawnDelay > 0f ? new WaitForSeconds(data.spawnDelay) : null;
-
         var startDelay = UnityEngine.Random.Range(data.spawnStartDelayMin, data.spawnStartDelayMax);
 
         if(startDelay > 0f) {
@@ -168,31 +167,13 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
             yield return new WaitForSeconds(UnityEngine.Random.Range(data.spawnStartDelayMin, data.spawnStartDelayMax));
         }
-
-        for(int i = 0; i < mListeners.Length; i++)
-            mListeners[i].OnSpawnReady();
-
+        
         while(mIsSpawning) {
-            bool isFull = mSpawnedEntities.Count >= data.maxSpawn;
-            if(isFull) {
-                for(int i = 0; i < mListeners.Length; i++)
-                    mListeners[i].OnSpawnFull(true);
-
-                while(mSpawnedEntities.Count >= data.maxSpawn)
-                    yield return null;
-
-                //wait for a bit
-                yield return new WaitForSeconds(data.spawnFullDelay);
-
-                for(int i = 0; i < mListeners.Length; i++)
-                    mListeners[i].OnSpawnFull(false);
-            }
-
             //spawn begin
             for(int i = 0; i < mListeners.Length; i++)
                 mListeners[i].OnSpawnBegin();
 
-            //spawning
+            //wait for spawn ready
             while(true) {
                 int spawnReadyCount = 0;
                 for(int i = 0; i < mListeners.Length; i++) {
@@ -212,13 +193,39 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
             Spawn(pool, spawnPos, spawnRot, mSpawnParms);
 
-            isFull = mSpawnedEntities.Count >= data.maxSpawn;
+            //spawning finished?
+            while(true) {
+                int spawnFinishCount = 0;
+                for(int i = 0; i < mListeners.Length; i++) {
+                    if(mListeners[i].OnSpawningFinish())
+                        spawnFinishCount++;
+                }
 
-            //spawn end
-            for(int i = 0; i < mListeners.Length; i++)
-                mListeners[i].OnSpawnEnd();
+                if(spawnFinishCount >= mListeners.Length)
+                    break;
 
-            yield return wait;
+                yield return null;
+            }
+
+            bool isFull = mSpawnedEntities.Count >= data.maxSpawn;
+            if(isFull) {
+                //spawn end
+                for(int i = 0; i < mListeners.Length; i++)
+                    mListeners[i].OnSpawnEnd();
+
+                while(mSpawnedEntities.Count >= data.maxSpawn)
+                    yield return null;
+
+                //wait for a bit
+                yield return new WaitForSeconds(data.spawnFullDelay);
+            }
+            else {
+                //ready up again
+                for(int i = 0; i < mListeners.Length; i++)
+                    mListeners[i].OnSpawnReady();
+
+                yield return new WaitForSeconds(UnityEngine.Random.Range(data.spawnDelayMin, data.spawnDelayMax));
+            }
         }
 
         mSpawningRout = null;
