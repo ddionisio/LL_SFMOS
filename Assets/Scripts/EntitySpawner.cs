@@ -261,12 +261,7 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
     void OnEntityReleased(EntityBase ent) {
         mSpawnedEntities.Remove(ent);
-        ent.releaseCallback -= OnEntityReleased;
-
-        if(mSpawningRout != null) {
-            for(int i = 0; i < mListeners.Length; i++)
-                mListeners[i].OnSpawnReady();
-        }
+        ent.releaseCallback -= OnEntityReleased;        
     }
 
     void OnDrawGizmos() {

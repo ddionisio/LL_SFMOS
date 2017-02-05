@@ -100,9 +100,6 @@ public class EntityCellStationary : EntityCommon {
     protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
         if(aStats.currentHP <= 0f)
             state = (int)EntityState.Dead;
-        else {
-            ApplyNormalState();
-        }
     }
 
     void ApplyNormalState() {

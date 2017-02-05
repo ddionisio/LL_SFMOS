@@ -224,11 +224,20 @@ public class EntityPathogen : EntityCommon {
         if(dist > 0f)
             dir /= dist;
 
-        var coll = Physics2D.Raycast(pos, dir, dist, 1<<layerIndex);
-        if(coll != mSeekTriggeredColl) {
+        var hits = Physics2D.RaycastAll(pos, dir, dist, 1<<layerIndex);
+        int hitInd = -1;
+        for(int i = 0; i < hits.Length; i++) {
+            if(hits[i].collider == mSeekTriggeredColl) {
+                hitInd = i;
+                break;
+            }
+        }
+
+        if(hitInd == -1) {
             state = (int)EntityState.Wander;
             yield break;
         }
+        //
 
         if(body)
             body.isKinematic = true;
@@ -236,8 +245,8 @@ public class EntityPathogen : EntityCommon {
         if(flock)
             flock.enabled = false;
 
-        Vector2 dest = coll.point;
-        dist = coll.distance;
+        Vector2 dest = hits[hitInd].point;
+        dist = hits[hitInd].distance;
 
         var delay = dist/stats.data.seekCloseInSpeed;
 

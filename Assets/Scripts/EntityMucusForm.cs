@@ -47,7 +47,7 @@ public class EntityMucusForm : M8.EntityBase {
         if(mCurGrowthCount != prevGrowthCount) {
             ApplyGrowthToCollider();
             
-            var growRadius = Mathf.Lerp(stats.radiusStart, stats.radiusEnd, (float)mCurGrowthCount/stats.growthMaxCount);
+            //var growRadius = Mathf.Lerp(stats.radiusStart, stats.radiusEnd, (float)mCurGrowthCount/stats.growthMaxCount);
             mGrowScale = Mathf.Lerp(stats.radiusToRootScaleStart, stats.radiusToRootScaleEnd, (float)mCurGrowthCount/stats.growthMaxCount);
 
             if(mGrowRout == null)
@@ -137,6 +137,8 @@ public class EntityMucusForm : M8.EntityBase {
         mScoreMultiplier = 1.0f;
 
         body.simulated = false;
+        body.velocity = Vector2.zero;
+        body.angularVelocity = 0f;
 
         mDefaultParent = null;
     }
@@ -248,6 +250,9 @@ public class EntityMucusForm : M8.EntityBase {
     }
 
     IEnumerator DoLaunch() {
+        if(stats.launchForceImpulse != 0f)
+            body.AddForce(mLaunchDir*stats.launchForceImpulse, ForceMode2D.Impulse);
+
         //wait for growth to end
         while(mGrowRout != null)
             yield return null;
@@ -257,10 +262,7 @@ public class EntityMucusForm : M8.EntityBase {
         animator.Play(stats.takeLaunch);
 
         float decayDelay = Mathf.Lerp(stats.launchForceGrowthDecayMinDelay, stats.launchForceGrowthDecayMaxDelay, (float)mCurGrowthCount/stats.growthMaxCount);
-
-        if(stats.launchForceImpulse != 0f)
-            body.AddForce(mLaunchDir*stats.launchForceImpulse, ForceMode2D.Impulse);
-
+                
         float curTime = 0f;
         float forceScale = 1f;
         while(curTime < stats.launchDuration && mLaunchBounds.Contains(body.position)) {

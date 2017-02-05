@@ -38,6 +38,8 @@ public class Mission0Controller : MissionController {
 
     public EntitySpawner[] spawnerActivates; //activated upon calling ActivateSpawners
 
+    public float launchAngleLimit = 75f;
+
     [Header("Health")]
     public EntityCommon[] cellWalls; //when all these die, game over, man
 
@@ -394,9 +396,9 @@ public class Mission0Controller : MissionController {
         if(mucusGather.Contains(pos))
             return false;
 
-        //Vector2 dpos = pos - (Vector2)mucusGather.transform.position;
-        //if(Vector2.Angle(Vector2.up, dpos) > 200f)
-        //return false;
+        Vector2 dir = (pos - (Vector2)mucusGather.transform.position).normalized;
+        if(Vector2.Angle(Vector2.up, dir) > launchAngleLimit)
+            return false;
 
         return true;
     }
@@ -413,12 +415,12 @@ public class Mission0Controller : MissionController {
             var pos = input.currentPosition;
 
             bool pointerActive = IsValidLaunch(pos);// !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
-
-            SetPointerActive(pointerActive);
-
+                        
             if(pointerActive) {
                 pointer.position = new Vector3(pos.x, pos.y, pointer.position.z);
             }
+
+            SetPointerActive(pointerActive);
         }
     }
 

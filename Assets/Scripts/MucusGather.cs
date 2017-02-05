@@ -176,6 +176,12 @@ public class MucusGather : MonoBehaviour {
     }
 
     void Grow() {
+        if(!mSpawnedMucusForm) {
+            //generate a new form
+            Vector2 spawnPos = mucusFormSpawnAt.position;
+            mSpawnedMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(mucusFormPoolGroup, mucusFormSpawnRef, mucusFormSpawnRef, null, spawnPos, null);
+        }
+
         if(mSpawnedMucusForm) {
             mSpawnedMucusForm.Grow();
 
@@ -189,11 +195,6 @@ public class MucusGather : MonoBehaviour {
             }
 
             //Debug.Log("growth count: "+mSpawnedMucusForm.currentGrowthCount);
-        }
-        else {
-            //generate a new form
-            Vector2 spawnPos = mucusFormSpawnAt.position;
-            mSpawnedMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(mucusFormPoolGroup, mucusFormSpawnRef, mucusFormSpawnRef, null, spawnPos, null);
         }
 
         //check if form becomes bigger than us

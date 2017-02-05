@@ -23,6 +23,8 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     public delegate void OnValueChangeCallback(int cur, int prev);
     public delegate void OnValueAmountAtCallback(Vector2 worldPos, int amount);
 
+    public Color backgroundColor = Color.black;
+
     public event OnValueChangeCallback scoreChangeCallback;
     public event OnValueAmountAtCallback scoreAtCallback;
     public event System.Action<SignalType, object> signalCallback; //listen to signals from mission control
@@ -87,5 +89,7 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         MissionManager.instance.SetMission(missionIndex);
 
         mStats = GetComponent<M8.StatsController>();
+
+        CameraController.instance.activeCamera.backgroundColor = backgroundColor;
     }
 }
