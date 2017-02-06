@@ -23,5 +23,7 @@ public enum EntityState {
 
     //cell
     Inflamed,
-    Infected
+    Infected,
+
+    Alert
 }

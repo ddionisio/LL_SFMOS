@@ -43,6 +43,18 @@ public class Mission0Controller : MissionController {
     [Header("Health")]
     public EntityCommon[] cellWalls; //when all these die, game over, man
 
+    [Header("Macrophage")]
+    public EntityPhagocyte macrophage;
+    public float processDeathWaitDelay;
+    public float processDeathPositionY; //relative to mucusFormBounds
+    public float processDeathPickUpXMin; //relative to mucusFormBounds, and processDeathPositionY
+    public float processDeathPickUpXMax; //relative to mucusFormBounds, and processDeathPositionY
+    public float processDeathFallSpeed;
+    public float processMoveSpeedMin;
+    public float processMoveSpeedMax;
+    public float processMoveWaveHeight;
+    public float processMoveWaveRate; //Y position wave while moving
+
     [Header("Stage Data")]
     public M8.Animator.AnimatorData animator;
 
@@ -58,10 +70,7 @@ public class Mission0Controller : MissionController {
     public string takeVictory;
 
     public StageData[] stages; //determines stage and sub stages
-
-    public string stageSpawnCheckPoolGroup; //which group to check for spawns
-    public string[] stageSpawnTagChecks; //which spawned entities to check to complete a stage
-
+    
     public float stageNextDelay = 3; //how long before the next stage transition
 
     private bool mIsPointerActive;
@@ -70,13 +79,19 @@ public class Mission0Controller : MissionController {
 
     private State mCurState = State.None;
     private Coroutine mRout;
+    
+    private int mEnemyCheckCount; //if this reaches 0 after all sub stage finishes, go to next stage
+    private int mVictimCount;
 
-    private bool mIsBeginWait;
-
-    private List<M8.PoolDataController> mStageSpawnChecks; //if this reaches 0 after all sub stage finishes, go to next stage
     private M8.CacheList<EntityCommon> mCellWallsAlive;
 
     public override int missionIndex { get { return 0; } }
+
+    public bool isProcessingVictims {
+        get {
+            return mVictimCount > 0 || macrophage.isEating;
+        }
+    }
 
     protected override void OnInstanceDeinit() {
         base.OnInstanceDeinit();
@@ -91,14 +106,6 @@ public class Mission0Controller : MissionController {
         for(int i = 0; i < cellWalls.Length; i++) {
             if(cellWalls[i])
                 cellWalls[i].setStateCallback -= OnCellWallStateChanged;
-        }
-
-        if(!string.IsNullOrEmpty(stageSpawnCheckPoolGroup)) {
-            var pool = M8.PoolController.GetPool(stageSpawnCheckPoolGroup);
-            if(pool) {
-                pool.spawnCallback -= OnSpawnEntity;
-                pool.despawnCallback -= OnDespawnEntity;
-            }
         }
     }
 
@@ -118,25 +125,19 @@ public class Mission0Controller : MissionController {
                 stages[i].activateGO.SetActive(false);
         }
 
-        mStageSpawnChecks = new List<M8.PoolDataController>();
+        mEnemyCheckCount = 0;
+        mVictimCount = 0;
+
+        mCellWallsAlive = new M8.CacheList<EntityCommon>(cellWalls.Length);
     }
 
     IEnumerator Start() {
         //hook stuff up after others init
-        if(!string.IsNullOrEmpty(stageSpawnCheckPoolGroup)) {
-            var pool = M8.PoolController.GetPool(stageSpawnCheckPoolGroup);
-            if(pool) {
-                pool.spawnCallback += OnSpawnEntity;
-                pool.despawnCallback += OnDespawnEntity;
-            }
-        }
-
+        
         mucusGatherInput.pointerDownCallback += OnMucusFieldInputDown;
         mucusGatherInput.pointerDragCallback += OnMucusFieldInputDrag;
         mucusGatherInput.pointerUpCallback += OnMucusFieldInputUp;
         mucusGatherInput.lockChangeCallback += OnMucusFieldInputLockChange;
-
-        mCellWallsAlive = new M8.CacheList<EntityCommon>(cellWalls.Length);
 
         for(int i = 0; i < cellWalls.Length; i++) {
             if(cellWalls[i]) {
@@ -169,9 +170,12 @@ public class Mission0Controller : MissionController {
 
     public override void Signal(SignalType signal, object parms) {
         switch(signal) {
-            case SignalType.Proceed:
-                if(mCurState == State.Begin)
-                    mIsBeginWait = false;
+            case SignalType.EnemyRegister:
+                mEnemyCheckCount++;
+                break;
+
+            case SignalType.EnemyUnregister:
+                mEnemyCheckCount--;
                 break;
         }
     }
@@ -193,6 +197,12 @@ public class Mission0Controller : MissionController {
         var cell = mCellWallsAlive[Random.Range(0, mCellWallsAlive.Count)];
 
         return cell ? cell.transform : null;
+    }
+
+    public override void ProcessKill(Collider2D victimColl, StatEntityController victimStatCtrl, int score) {
+        //default behaviour
+        //ScoreAt(victimStatCtrl.transform.position, score);
+        StartCoroutine(DoVictimProcess(victimColl, victimStatCtrl, score));
     }
 
     void EnterStage(int stage) {
@@ -263,14 +273,10 @@ public class Mission0Controller : MissionController {
 
         //mucusGatherInput.isLocked = false;
 
-        //free form, wait for signal via call to Progress
-        mIsBeginWait = true;
-
-        SendSignal(SignalType.Waiting, 0);
-
-        while(mIsBeginWait)
+        //free form, wait for pathogens to die
+        while(mEnemyCheckCount > 0)
             yield return null;
-
+        
         //mucusGatherInput.isLocked = true;
 
         if(!string.IsNullOrEmpty(takeBeginOutro)) {
@@ -340,7 +346,7 @@ public class Mission0Controller : MissionController {
 
         //wait for all spawn checks to be released      
 
-        while(Time.time - startTime < curStage.minDuration || mStageSpawnChecks.Count > 0)
+        while(Time.time - startTime < curStage.minDuration || mEnemyCheckCount > 0)
             yield return null;
 
         //move specific entities to the left?
@@ -370,6 +376,10 @@ public class Mission0Controller : MissionController {
                 yield return null;
         }
 
+        //wait for eating process
+        while(isProcessingVictims)
+            yield return null;
+
         mRout = null;
 
         ProcessVictory();
@@ -387,9 +397,72 @@ public class Mission0Controller : MissionController {
                 yield return null;
         }
 
+        //wait for eating process
+        while(isProcessingVictims)
+            yield return null;
+
         mRout = null;
 
         ProcessLose();
+    }
+
+    IEnumerator DoVictimProcess(Collider2D coll, StatEntityController statCtrl, int score) {
+        yield return new WaitForSeconds(processDeathWaitDelay);
+
+        mVictimCount++;
+        
+        float deathProcessX = mucusFormBounds.center.x + Random.Range(processDeathPickUpXMin, processDeathPickUpXMax);
+        float deathY = mucusFormBounds.center.y + processDeathPositionY;
+
+        Transform trans = statCtrl.transform;
+
+        //fall down
+        Vector2 pos = trans.position;
+
+        float yStart = pos.y;
+
+        if(yStart != deathY) {
+            var ease = DG.Tweening.Core.Easing.EaseManager.ToEaseFunction(DG.Tweening.Ease.InSine);
+
+            float dist = Mathf.Abs(deathY - yStart);
+
+            float delay = dist/processDeathFallSpeed;
+            float curTime = 0f;
+            while(curTime < delay) {
+                yield return null;
+
+                curTime += Time.deltaTime;
+
+                float t = Mathf.Clamp01(ease(curTime, delay, 0f, 0f));
+
+                trans.position = new Vector2(pos.x, Mathf.Lerp(yStart, deathY, t));
+            }
+        }
+
+        //move towards phagocyte
+        float xStart = pos.x;
+
+        if(xStart != deathProcessX) {
+            float dist = Mathf.Abs(deathProcessX - xStart);
+
+            float spd = Random.Range(processMoveSpeedMin, processMoveSpeedMax);
+            float delay = dist/spd;
+            float curTime = 0f;
+            while(curTime < delay) {
+                yield return null;
+
+                curTime += Time.deltaTime;
+
+                float t = Mathf.Clamp01(curTime/delay);
+
+                trans.position = new Vector2(Mathf.Lerp(xStart, deathProcessX, t), deathY - Mathf.Sin(curTime*processMoveWaveRate)*processMoveWaveHeight);
+            }
+        }
+
+        //let it be eaten
+        macrophage.Eat(statCtrl.GetComponent<M8.EntityBase>(), score);
+
+        mVictimCount--;
     }
 
     bool IsValidLaunch(Vector2 pos) {
@@ -415,7 +488,7 @@ public class Mission0Controller : MissionController {
             var pos = input.currentPosition;
 
             bool pointerActive = IsValidLaunch(pos);// !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
-                        
+
             if(pointerActive) {
                 pointer.position = new Vector3(pos.x, pos.y, pointer.position.z);
             }
@@ -468,33 +541,24 @@ public class Mission0Controller : MissionController {
                 break;
         }
     }
-
-    bool CheckSpawn(M8.PoolDataController pdc) {
-        bool isValidSpawn = false;
-        for(int i = 0; i < stageSpawnTagChecks.Length; i++) {
-            if(pdc.CompareTag(stageSpawnTagChecks[i])) {
-                isValidSpawn = true;
-                break;
-            }
-        }
-
-        return isValidSpawn;
-    }
-
-    void OnSpawnEntity(M8.PoolDataController pdc) {
-        if(CheckSpawn(pdc))
-            mStageSpawnChecks.Add(pdc);
-    }
-
-    void OnDespawnEntity(M8.PoolDataController pdc) {
-        if(CheckSpawn(pdc))
-            mStageSpawnChecks.Remove(pdc);
-    }
-
+    
     void OnDrawGizmos() {
 
         Gizmos.color = Color.yellow;
 
         Gizmos.DrawWireCube(mucusFormBounds.center, mucusFormBounds.size);
+
+        Gizmos.color *= 0.5f;
+
+        float y = mucusFormBounds.center.y + processDeathPositionY;
+
+        Vector3 lPosS = new Vector3(mucusFormBounds.min.x, y, 0f);
+        Vector3 lPosE = new Vector3(mucusFormBounds.max.x, y, 0f);
+
+        Gizmos.DrawLine(lPosS, lPosE);
+
+        float processDeathRadius = Mathf.Abs(processDeathPickUpXMax - processDeathPickUpXMin);
+
+        Gizmos.DrawSphere(new Vector3(mucusFormBounds.center.x + Mathf.Lerp(processDeathPickUpXMin, processDeathPickUpXMax, 0.5f), y, 0f), processDeathRadius);
     }
 }

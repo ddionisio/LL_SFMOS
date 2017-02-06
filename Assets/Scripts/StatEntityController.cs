@@ -48,6 +48,13 @@ public class StatEntityController : MonoBehaviour, M8.IPoolSpawn, M8.IPoolDespaw
         get { return mActive && mCurHP > 0f; }
     }
 
+    /// <summary>
+    /// Determine if entity for this stat is not released
+    /// </summary>
+    public bool isActive {
+        get { return mActive; }
+    }
+
     public event Callback HPChangedCallback;
     public event Callback staminaChangedCallback;
     public event CallbackSignal signalCallback;

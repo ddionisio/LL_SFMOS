@@ -3,22 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EntityPathogen : EntityCommon {
-        
+
     public M8.Auxiliary.AuxTrigger2D seekTrigger;
     
+    [Header("Hurt")]
+    public GameObject hurtActiveGO;
+
     private EntitySpawner mSpawner; //for carriers
 
     private StatEntityController mSeekTriggeredStatCtrl;
     private Collider2D mSeekTriggeredColl;
 
+    private float mCurHurtDuration;
+
     private Coroutine mRout;
-    
+    private Coroutine mHurtRout;
+
     protected override void StateChanged() {
         if(mRout != null) {
             StopCoroutine(mRout);
             mRout = null;
         }
-                
+
         switch((EntityState)prevState) {
             case EntityState.Control:
                 anchor = null; //force to detach anchor                
@@ -63,6 +69,9 @@ public class EntityPathogen : EntityCommon {
 
                 if(mSpawner)
                     mSpawner.isSpawning = true;
+
+                if(animator && !string.IsNullOrEmpty(stats.data.takeNormal))
+                    animator.Play(stats.data.takeNormal);
                 break;
 
             case EntityState.Wander:
@@ -79,6 +88,9 @@ public class EntityPathogen : EntityCommon {
 
                 if(mSpawner)
                     mSpawner.isSpawning = true;
+
+                if(animator && !string.IsNullOrEmpty(stats.data.takeNormal))
+                    animator.Play(stats.data.takeNormal);
                 break;
 
             case EntityState.Seek:
@@ -99,8 +111,11 @@ public class EntityPathogen : EntityCommon {
             case EntityState.Dead:
                 Debug.Log("dead: "+name);
 
-                if(body)
+                if(body) {
                     body.simulated = false;
+                    body.velocity = Vector2.zero;
+                    body.angularVelocity = 0f;
+                }
 
                 if(flock)
                     flock.enabled = false;
@@ -108,32 +123,39 @@ public class EntityPathogen : EntityCommon {
                 if(mSpawner)
                     mSpawner.isSpawning = false;
 
-                //animate
-
-                Release();
+                if(animator && !string.IsNullOrEmpty(stats.data.takeDeath))
+                    animator.Play(stats.data.takeDeath);
                 break;
         }
     }
-    
+
     protected override void OnDespawned() {
         //reset stuff here
         mRout = null;
+        mHurtRout = null;
 
         if(seekTrigger)
             seekTrigger.gameObject.SetActive(false);
+
+        if(hurtActiveGO)
+            hurtActiveGO.SetActive(false);
 
         ClearSeek();
 
         base.OnDespawned();
     }
 
-    /*protected override void OnSpawned(M8.GenericParams parms) {
+    protected override void OnSpawned(M8.GenericParams parms) {
         base.OnSpawned(parms);
 
         //populate data/state for ai, player control, etc.
-        
+
         //start ai, player control, etc
-    }*/
+        if(animator) {
+            if(!string.IsNullOrEmpty(stats.data.takeSpawn))
+                animator.Play(stats.data.takeSpawn);
+        }
+    }
 
     protected override void OnDestroy() {
         //dealloc here        
@@ -141,16 +163,25 @@ public class EntityPathogen : EntityCommon {
             seekTrigger.enterCallback -= OnSeekTriggerEnter;
         }
 
+        if(animator)
+            animator.takeCompleteCallback -= OnAnimatorComplete;
+
         base.OnDestroy();
     }
 
     protected override void Awake() {
         base.Awake();
-        
+
         if(seekTrigger) {
             seekTrigger.enterCallback += OnSeekTriggerEnter;
         }
-        
+
+        if(animator)
+            animator.takeCompleteCallback += OnAnimatorComplete;
+
+        if(hurtActiveGO)
+            hurtActiveGO.SetActive(false);
+
         mSpawner = GetComponent<EntitySpawner>();
     }
 
@@ -160,7 +191,7 @@ public class EntityPathogen : EntityCommon {
 
         //initialize variables from other sources (for communicating with managers, etc.)
     }
-    
+
     void ApplySeekFromCollider(Collider2D coll) {
         if(coll && coll != mSeekTriggeredColl) {
             if(stats.data.IsSeekValid(coll.tag)) {
@@ -192,9 +223,13 @@ public class EntityPathogen : EntityCommon {
         var seekTarget = MissionController.instance.RequestTarget(transform);
 
         if(!(flock && seekTarget)) {
+            Debug.LogWarning("Nothing to seek");
             state = (int)EntityState.Wander;
             yield break;
         }
+
+        if(animator && !string.IsNullOrEmpty(stats.data.takeSeek))
+            animator.Play(stats.data.takeSeek);
 
         //set flock move target
         flock.moveTarget = seekTarget;
@@ -216,27 +251,19 @@ public class EntityPathogen : EntityCommon {
         //
         //close in
         Vector2 pos = transform.position;
+        Vector2 collPos = mSeekTriggeredColl.bounds.center;
 
-        var layerIndex = mSeekTriggeredColl.gameObject.layer;
-
-        Vector2 dir = (Vector2)mSeekTriggeredColl.transform.position - pos;
+        Vector2 dir = collPos - pos;
         float dist = dir.magnitude;
         if(dist > 0f)
             dir /= dist;
 
-        var hits = Physics2D.RaycastAll(pos, dir, dist, 1<<layerIndex);
-        int hitInd = -1;
-        for(int i = 0; i < hits.Length; i++) {
-            if(hits[i].collider == mSeekTriggeredColl) {
-                hitInd = i;
-                break;
-            }
-        }
+        var collBoundExt = mSeekTriggeredColl.bounds.extents;
+        float collExtMin = Mathf.Min(collBoundExt.x, collBoundExt.y);
 
-        if(hitInd == -1) {
-            state = (int)EntityState.Wander;
-            yield break;
-        }
+        dist -= collExtMin;
+
+        Vector2 dest = pos + dir*dist;
         //
 
         if(body)
@@ -245,10 +272,7 @@ public class EntityPathogen : EntityCommon {
         if(flock)
             flock.enabled = false;
 
-        Vector2 dest = hits[hitInd].point;
-        dist = hits[hitInd].distance;
-
-        var delay = dist/stats.data.seekCloseInSpeed;
+        var delay = Mathf.Abs(dist)/stats.data.seekCloseInSpeed;
 
         var easeFunc = DG.Tweening.Core.Easing.EaseManager.ToEaseFunction(DG.Tweening.Ease.OutCirc);
 
@@ -276,6 +300,8 @@ public class EntityPathogen : EntityCommon {
             var atkSpd = stats.data.attackSpeed;
 
             //TODO: attack animation scale by attack speed
+            if(animator && !string.IsNullOrEmpty(stats.data.takeAttack))
+                animator.Play(stats.data.takeAttack);
 
             curTime = 0f;
 
@@ -303,9 +329,33 @@ public class EntityPathogen : EntityCommon {
         state = (int)EntityState.Normal;
     }
 
-    //protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
-        //base.OnStatHPChanged(aStats, prev);
-    //}
+    IEnumerator DoHurt() {
+        if(hurtActiveGO) hurtActiveGO.SetActive(true);
+
+        while(mCurHurtDuration > 0f) {
+            yield return null;
+            mCurHurtDuration -= Time.deltaTime;
+        }
+
+        if(hurtActiveGO) hurtActiveGO.SetActive(false);
+
+        mHurtRout = null;
+    }
+
+    protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
+        if(aStats.currentHP > 0f) {
+            if(aStats.currentHP < prev) {
+                mCurHurtDuration = stats.data.hurtDuration;
+                if(mHurtRout == null)
+                    mHurtRout = StartCoroutine(DoHurt());
+            }
+            //healed?
+
+            return;
+        }
+
+        base.OnStatHPChanged(aStats, prev);
+    }
 
     protected override void OnStatStaminaChanged(StatEntityController aStats, float prev) {
         //slow down
@@ -332,5 +382,15 @@ public class EntityPathogen : EntityCommon {
         //only apply if there's no current seek
         if(!mSeekTriggeredColl)
             ApplySeekFromCollider(coll);
+    }
+
+    void OnAnimatorComplete(M8.Animator.AnimatorData anim, M8.Animator.AMTakeData take) {
+        if(take.name == stats.data.takeSpawn) {
+            animator.Play(stats.data.takeNormal);
+        }
+        else if(take.name == stats.data.takeDeath) {
+            if(stats.data.releaseOnDeath)
+                Release();
+        }
     }
 }

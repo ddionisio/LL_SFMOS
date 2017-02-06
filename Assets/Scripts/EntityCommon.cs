@@ -74,6 +74,9 @@ public class EntityCommon : M8.EntityBase {
     }
 
     protected override void OnDespawned() {
+        if(mStats.data.registerAsEnemy)
+            MissionController.instance.Signal(MissionController.SignalType.EnemyUnregister, this);
+
         if(flock) {
             flock.enabled = false;
             flock.ResetData();
@@ -95,7 +98,6 @@ public class EntityCommon : M8.EntityBase {
     }
 
     protected override void OnSpawned(M8.GenericParams parms) {
-
         //populate data/state for ai, player control, etc.
         int toState = (int)EntityState.Normal;
         Transform toAnchor = null;
@@ -111,6 +113,9 @@ public class EntityCommon : M8.EntityBase {
         //start ai, player control, etc
         anchor = toAnchor;
         state = toState;
+
+        if(mStats.data.registerAsEnemy)
+            MissionController.instance.Signal(MissionController.SignalType.EnemyRegister, this);
     }
 
     protected override void OnDestroy() {

@@ -322,7 +322,9 @@ public class EntityMucusForm : M8.EntityBase {
 
     void OnTriggerEnter2D(Collider2D other) {
         if(stats.IsAttackValid(other.tag)) {
-            var victimStats = other.attachedRigidbody.GetComponent<StatEntityController>();
+            var otherBody = other.attachedRigidbody;
+
+            var victimStats = otherBody.GetComponent<StatEntityController>();
             if(!victimStats) {
                 //no stat, just die
                 state = (int)EntityState.Dead;
@@ -349,26 +351,30 @@ public class EntityMucusForm : M8.EntityBase {
             if(victimStats.isAlive) {
                 //snap to pathogen
                 Vector2 pos = transform.position;
+                Vector2 collPos = other.bounds.center;
 
-                var layerIndex = other.gameObject.layer;
-
-                Vector2 dir = (Vector2)other.transform.position - pos;
+                Vector2 dir = collPos - pos;
                 float dist = dir.magnitude;
                 if(dist > 0f)
                     dir /= dist;
 
-                var coll = Physics2D.Raycast(pos, dir, dist, 1<<layerIndex);
-                var otherBody = other.attachedRigidbody;
+                var collBoundExt = other.bounds.extents;
+                float collExtMin = Mathf.Min(collBoundExt.x, collBoundExt.y);
 
-                transform.position = coll.point;
+                dist -= collExtMin;
+
+                Vector2 destPos = pos + dir*dist;
+
+                transform.position = destPos;
                 //
 
                 //nudge the collided body
+                
                 if(!otherBody.isKinematic) {
                     var vel = body.velocity;
                     var impactDir = vel.normalized;
                     var impactForce = stats.GetImpactForce(mCurGrowthCount);
-                    otherBody.AddForceAtPosition(impactDir*impactForce, coll.point, ForceMode2D.Impulse);
+                    otherBody.AddForceAtPosition(impactDir*impactForce, destPos, ForceMode2D.Impulse);
                 }
                 //
 
@@ -385,7 +391,11 @@ public class EntityMucusForm : M8.EntityBase {
                 //score
                 if(wasAlive && !victimStats.isAlive) {
                     int score = Mathf.RoundToInt(victimStats.data.score * mScoreMultiplier);
-                    MissionController.instance.ScoreAt(victimStats.transform.position, score);
+
+                    if(victimStats.isActive)
+                        MissionController.instance.ProcessKill(other, victimStats, score);
+                    else
+                        MissionController.instance.ScoreAt(victimStats.transform.position, score);
                 }
 
                 //check excess damage and split off to other pathogens

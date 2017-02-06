@@ -17,7 +17,10 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         Leave, //tell listeners to leave, responders are expected to signal back LeaveBegin on the same frame
 
         LeaveBegin, //tells mission it is leaving
-        LeaveEnd //tells mission it has left
+        LeaveEnd, //tells mission it has left
+
+        EnemyRegister, //parms = M8.EntityBase, for mission to check for enemy count before stage can proceed
+        EnemyUnregister, //parms = M8.EntityBase, make sure to call this during release, so stage can proceed
     }
 
     public delegate void OnValueChangeCallback(int cur, int prev);
@@ -65,6 +68,11 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
 
     public void ProcessLose() {
         M8.UIModal.Manager.instance.ModalOpen(ModalLose.modalRef);
+    }
+
+    public virtual void ProcessKill(Collider2D victimColl, StatEntityController victimStatCtrl, int score) {
+        //default behaviour
+        ScoreAt(victimStatCtrl.transform.position, score);
     }
 
     public virtual void Signal(SignalType signal, object parms) {

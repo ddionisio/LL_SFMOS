@@ -28,6 +28,8 @@ public class StatEntity : ScriptableObject {
 
     public int score; //score upon death
 
+    public bool registerAsEnemy; //register as enemy for mission controller
+
     [Header("Seek")]
     public float seekDelay; //for seek state
     public string seekTag;
@@ -46,7 +48,20 @@ public class StatEntity : ScriptableObject {
     public float roamForceMax;
     public float roamChangeDelayMin;
     public float roamChangeDelayMax;
-    
+
+    [Header("Hurt")]
+    public float hurtDuration = 0.3f;
+
+    [Header("Death")]
+    public bool releaseOnDeath = true;
+
+    [Header("Takes")]
+    public string takeSpawn; //animation to play on spawn start, usu. same as takeNormal
+    public string takeNormal;
+    public string takeSeek;
+    public string takeDeath;
+    public string takeAttack;
+
     public bool canSplit {
         get { return !string.IsNullOrEmpty(splitSpawnPoolGroup) && splitSpawnPoolEntityTypes.Length > 0; }
     }
