@@ -14,6 +14,11 @@
             "key": "title_lose",
             "text": "LOSE",
             "param": []
+        },
+        {
+            "key": "start",
+            "text": "START",
+            "param": []
         }
     ]
 }
