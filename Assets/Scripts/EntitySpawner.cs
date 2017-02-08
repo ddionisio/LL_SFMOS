@@ -102,6 +102,8 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
             mSpawnParms.Remove(arg);
     }
 
+    public event Action<EntitySpawner, M8.EntityBase> spawnCallback;
+
     void OnEnable() {
         if(mIsSpawning) {
             if(mSpawningRout == null)
@@ -239,6 +241,9 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
             mSpawnedEntities.Add(entity);
             entity.releaseCallback += OnEntityReleased;
         }
+
+        if(spawnCallback != null)
+            spawnCallback(this, entity);
 
         return entity;
     }

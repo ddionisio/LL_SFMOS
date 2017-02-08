@@ -6,10 +6,19 @@ using UnityEngine;
 public class FPSText : MonoBehaviour {
     public Text label;
 
+    private float mLastRT;
     private float mLastDeltaTime;
 
+    void Start() {
+        mLastRT = Time.realtimeSinceStartup;
+    }
+
 	void Update () {
-        mLastDeltaTime += (Time.deltaTime - mLastDeltaTime) * 0.1f;
+        float rt = Time.realtimeSinceStartup;
+        float deltaRT = rt - mLastRT;
+        mLastRT = rt;
+
+        mLastDeltaTime += (deltaRT - mLastDeltaTime) * 0.1f;
         
         float fps = 1.0f / mLastDeltaTime;
         label.text = fps.ToString();

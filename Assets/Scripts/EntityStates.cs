@@ -1,5 +1,7 @@
 ﻿
 public enum EntityState {
+    Invalid = -1,
+
     //general    
     Normal,
     Dead,
@@ -19,6 +21,7 @@ public enum EntityState {
     Gathered,
 
     //mucus form
+    Select,
     Launch,
 
     //cell

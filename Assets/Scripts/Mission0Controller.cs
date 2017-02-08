@@ -8,31 +8,62 @@ public class Mission0Controller : MissionController {
     public enum State {
         None,
 
-        Begin,
-
-        StageTransition,
-
         StagePlay,
 
+        StageTransition,
+                
         Victory,
 
         Defeat,
     }
 
-    [System.Serializable]
-    public struct StageData {
-        public int subStageCount;
-        public float subStageNextDelay;
-        public float minDuration; //for stages with no pathogens
-        public GameObject activateGO;
+    public enum ActionType {
+        Cutscene,
+        Dialog,
+        InputLock,
+        InputUnlock,
+        Wait
     }
 
+    [System.Serializable]
+    public struct Action {
+        public string id;
+        public ActionType type;
+        public string sVal;
+        public float fVal;
+    }
+
+    [System.Serializable]
+    public class StageData {
+        public GameObject activateGO;
+
+        public M8.Animator.AnimatorData anim;
+
+        public Action[] enterActions;
+        public Action[] exitActions;
+        
+        public float minDuration; //for stages with no pathogens
+
+        public float stageNextDelay = 3; //how long before the next stage transition
+    }
+
+    [Header("Stage Data")]    
+    public StageData[] stages; //determines stage and sub stages
+
+    [Header("Main Animation")]
+    public M8.Animator.AnimatorData mainAnimator; //general animator
+
+    public string takeStageTransition; //do some woosh thing towards left
+    public string takeDefeat;
+    public string takeVictory;
+                
     [Header("Mucus Gather")]
     public MucusGatherInputField mucusGatherInput;
-    public MucusGather mucusGather;
 
     public Transform pointer;
     public GameObject pointerGO;
+    public GameObject[] pointerDisplays;
+    public M8.TransAttachTo pointerAttach;
 
     public Bounds mucusFormBounds;
 
@@ -54,28 +85,10 @@ public class Mission0Controller : MissionController {
     public float processMoveSpeedMax;
     public float processMoveWaveHeight;
     public float processMoveWaveRate; //Y position wave while moving
-
-    [Header("Stage Data")]
-    public M8.Animator.AnimatorData animator;
-
-    public float beginDelay = 1f;
-    public GameObject beginActivateGO;
-
-    public string takeBeginIntro;
-    public string takeBeginOutro;
-
-    public string takeStageTransition; //do some woosh thing towards left
-
-    public string takeDefeat;
-    public string takeVictory;
-
-    public StageData[] stages; //determines stage and sub stages
-    
-    public float stageNextDelay = 3; //how long before the next stage transition
-
+        
     private bool mIsPointerActive;
 
-    private int mCurStageInd;
+    private int mCurStageInd = -1;
 
     private State mCurState = State.None;
     private Coroutine mRout;
@@ -120,6 +133,9 @@ public class Mission0Controller : MissionController {
         if(pointer)
             pointer.gameObject.SetActive(false);
 
+        for(int i = 0; i < pointerDisplays.Length; i++)
+            pointerDisplays[i].SetActive(false);
+
         for(int i = 0; i < stages.Length; i++) {
             if(stages[i].activateGO)
                 stages[i].activateGO.SetActive(false);
@@ -148,12 +164,14 @@ public class Mission0Controller : MissionController {
 
         mucusGatherInput.isLocked = true;
 
-        yield return new WaitForSeconds(beginDelay);
+        while(M8.SceneManager.instance.isLoading)
+            yield return null;
 
-        if(!animator)
-            yield break;
+        mucusGatherInput.isLocked = false;
 
-        ApplyState(State.Begin);
+        mCurStageInd = -1;
+
+        EnterStage(0);
     }
 
     void SetPointerActive(bool active) {
@@ -166,6 +184,11 @@ public class Mission0Controller : MissionController {
             if(pointer)
                 pointer.gameObject.SetActive(mIsPointerActive);
         }
+    }
+
+    void SetPointerDisplayActive(bool active) {
+        for(int i = 0; i < pointerDisplays.Length; i++)
+            pointerDisplays[i].SetActive(active);
     }
 
     public override void Signal(SignalType signal, object parms) {
@@ -181,7 +204,7 @@ public class Mission0Controller : MissionController {
     }
 
     /// <summary>
-    /// Call this during begin animation to start up the spawners (goblet mucus spawn)
+    /// Call this during animation to start up the spawners (goblet mucus spawn)
     /// </summary>           
     public void ActivateSpawners() {
         for(int i = 0; i < spawnerActivates.Length; i++) {
@@ -205,12 +228,18 @@ public class Mission0Controller : MissionController {
         StartCoroutine(DoVictimProcess(victimColl, victimStatCtrl, score));
     }
 
-    void EnterStage(int stage) {
-        if(mCurStageInd >= 0 && mCurStageInd < stages.Length) {
-            if(stages[mCurStageInd].activateGO)
-                stages[mCurStageInd].activateGO.SetActive(false);
-        }
+    protected override void SetLock(bool aLock) {
+        mucusGatherInput.isLocked = aLock;
+    }
 
+    void EnterStage(int stage) {
+        var prevStageInd = mCurStageInd;
+
+        if(prevStageInd >= 0 && prevStageInd < stages.Length) {
+            if(stages[prevStageInd].activateGO)
+                stages[prevStageInd].activateGO.SetActive(false);
+        }
+                
         mCurStageInd = stage;
 
         if(mCurStageInd >= 0 && mCurStageInd < stages.Length) {
@@ -220,7 +249,10 @@ public class Mission0Controller : MissionController {
 
         SendSignal(SignalType.NewStage, mCurStageInd);
 
-        ApplyState(State.StageTransition);
+        if(prevStageInd >= 0)
+            ApplyState(State.StageTransition);
+        else
+            ApplyState(State.StagePlay);
     }
 
     void ApplyState(State state) {
@@ -234,10 +266,6 @@ public class Mission0Controller : MissionController {
             }
 
             switch(state) {
-                case State.Begin:
-                    mRout = StartCoroutine(DoBegin());
-                    break;
-
                 case State.StageTransition:
                     mRout = StartCoroutine(DoStageTransition());
                     break;
@@ -256,44 +284,7 @@ public class Mission0Controller : MissionController {
             }
         }
     }
-
-    IEnumerator DoBegin() {
-        mucusGatherInput.isLocked = false;
-
-        if(beginActivateGO)
-            beginActivateGO.SetActive(true);
-
-        //small intro to show stuff
-        if(!string.IsNullOrEmpty(takeBeginIntro)) {
-            animator.Play(takeBeginIntro);
-
-            while(animator.isPlaying)
-                yield return null;
-        }
-
-        //mucusGatherInput.isLocked = false;
-
-        //free form, wait for pathogens to die
-        while(mEnemyCheckCount > 0)
-            yield return null;
-        
-        //mucusGatherInput.isLocked = true;
-
-        if(!string.IsNullOrEmpty(takeBeginOutro)) {
-            animator.Play(takeBeginOutro);
-
-            while(animator.isPlaying)
-                yield return null;
-        }
-
-        if(beginActivateGO)
-            beginActivateGO.SetActive(false);
-
-        mRout = null;
-
-        EnterStage(0);
-    }
-
+    
     IEnumerator DoStageTransition() {
         mucusGatherInput.isLocked = false;
 
@@ -302,9 +293,9 @@ public class Mission0Controller : MissionController {
         //apply progress animation to HUD
 
         if(!string.IsNullOrEmpty(takeStageTransition)) {
-            animator.Play(takeStageTransition);
+            mainAnimator.Play(takeStageTransition);
 
-            while(animator.isPlaying)
+            while(mainAnimator.isPlaying)
                 yield return null;
         }
 
@@ -313,9 +304,38 @@ public class Mission0Controller : MissionController {
         ApplyState(State.StagePlay);
     }
 
-    IEnumerator DoStagePlay() {
-        mucusGatherInput.isLocked = false;
+    IEnumerator DoActions(M8.Animator.AnimatorData anim, Action[] actions) {
+        for(int i = 0; i < actions.Length; i++) {
+            var act = actions[i];
 
+            switch(act.type) {
+                case ActionType.Cutscene:
+                    anim.Play(act.id);
+                    while(anim.isPlaying)
+                        yield return null;
+                    break;
+
+                case ActionType.Dialog:
+                    //open dialog
+                    //wait for close
+                    break;
+
+                case ActionType.InputLock:
+                    inputLock = true;
+                    break;
+
+                case ActionType.InputUnlock:
+                    inputLock = false;
+                    break;
+
+                case ActionType.Wait:
+                    yield return new WaitForSeconds(act.fVal);
+                    break;
+            }
+        }
+    }
+
+    IEnumerator DoStagePlay() {
         //if for some reason we are suppose to be finished
         if(mCurStageInd >= stages.Length) {
             ApplyState(State.Victory);
@@ -326,32 +346,16 @@ public class Mission0Controller : MissionController {
 
         var curStage = stages[mCurStageInd];
 
-        if(curStage.subStageCount > 0) {
-            var waitNextSubStage = new WaitForSeconds(curStage.subStageNextDelay);
-
-            for(int i = 0; i < curStage.subStageCount; i++) {
-                var take = string.Format("stage_{0}_{1}", mCurStageInd, i);
-                animator.Play(take);
-
-                while(animator.isPlaying)
-                    yield return null;
-
-                yield return waitNextSubStage;
-            }
-        }
-        else {
-            var take = "stage_"+mCurStageInd;
-            animator.Play(take);
-        }
-
-        //wait for all spawn checks to be released      
-
+        yield return DoActions(curStage.anim, curStage.enterActions);
+        
+        //wait for all spawn checks to be released
         while(Time.time - startTime < curStage.minDuration || mEnemyCheckCount > 0)
             yield return null;
 
         //move specific entities to the left?
 
-        yield return new WaitForSeconds(stageNextDelay);
+        if(curStage.stageNextDelay > 0f)
+            yield return new WaitForSeconds(curStage.stageNextDelay);
 
         mRout = null;
 
@@ -370,9 +374,9 @@ public class Mission0Controller : MissionController {
         SendSignal(SignalType.Complete, 0);
 
         if(!string.IsNullOrEmpty(takeVictory)) {
-            animator.Play(takeVictory);
+            mainAnimator.Play(takeVictory);
 
-            while(animator.isPlaying)
+            while(mainAnimator.isPlaying)
                 yield return null;
         }
 
@@ -391,9 +395,9 @@ public class Mission0Controller : MissionController {
         SendSignal(SignalType.Defeat, 0);
 
         if(!string.IsNullOrEmpty(takeDefeat)) {
-            animator.Play(takeDefeat);
+            mainAnimator.Play(takeDefeat);
 
-            while(animator.isPlaying)
+            while(mainAnimator.isPlaying)
                 yield return null;
         }
 
@@ -465,66 +469,54 @@ public class Mission0Controller : MissionController {
         mVictimCount--;
     }
 
-    bool IsValidLaunch(Vector2 pos) {
-        if(mucusGather.Contains(pos))
+    bool IsValidLaunch(MucusGatherInputField input) {
+        if(Vector2.Angle(Vector2.up, input.dir) > launchAngleLimit)
             return false;
 
-        Vector2 dir = (pos - (Vector2)mucusGather.transform.position).normalized;
-        if(Vector2.Angle(Vector2.up, dir) > launchAngleLimit)
+        if(input.curLength < input.currentLaunchInput.radius)
             return false;
 
         return true;
     }
-
+    
     void OnMucusFieldInputDown(MucusGatherInputField input) {
-        if(input.currentAreaType == MucusGatherInputField.AreaType.Bottom) {
-            mucusGather.transform.position = new Vector3(input.originPosition.x, input.originPosition.y, 0f);
-            mucusGather.Activate();
-        }
+        pointerAttach.target = input.currentLaunchInput.transform;
+
+        SetPointerActive(true);
     }
 
     void OnMucusFieldInputDrag(MucusGatherInputField input) {
-        if(mucusGather.isActive) {
-            var pos = input.currentPosition;
+        var origin = input.originPosition;
+        var pos = input.currentPosition;
 
-            bool pointerActive = IsValidLaunch(pos);// !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
+        bool pointerActive = IsValidLaunch(input);// !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
 
-            if(pointerActive) {
-                pointer.position = new Vector3(pos.x, pos.y, pointer.position.z);
-            }
-
-            SetPointerActive(pointerActive);
+        if(pointerActive) {
+            pointer.position = new Vector3(pos.x, pos.y, pointer.position.z);
         }
+
+        SetPointerDisplayActive(pointerActive);
     }
 
     void OnMucusFieldInputUp(MucusGatherInputField input) {
         SetPointerActive(false);
+        SetPointerDisplayActive(false);
 
-        if(mucusGather.isActive) {
-            Vector2 pos = input.currentPosition;
+        Vector2 pos = input.currentPosition;
 
-            bool pointerActive = IsValidLaunch(pos);// !mucusGather.Contains(pos) && input.currentAreaType == MucusGatherInputField.AreaType.Top;
+        bool pointerActive = IsValidLaunch(input);
 
-            if(pointerActive) {
-                Vector2 sPos = mucusGather.mucusFormSpawnAt.position;
-
-                var dir = pos - sPos;
-                var dist = dir.magnitude;
-                if(dist > 0f)
-                    dir /= dist;
-
-                mucusGather.Release(dir, dist, mucusFormBounds);
-            }
-            else {
-                mucusGather.Cancel();
-            }
+        if(pointerActive) {
+            input.Launch(mucusFormBounds);
         }
+        else
+            input.Cancel();
     }
 
     void OnMucusFieldInputLockChange(MucusGatherInputField input) {
         if(input.isLocked) {
             SetPointerActive(false);
-            mucusGather.Cancel();
+            SetPointerDisplayActive(false);
         }
     }
 

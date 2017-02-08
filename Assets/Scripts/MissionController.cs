@@ -26,17 +26,8 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     public delegate void OnValueChangeCallback(int cur, int prev);
     public delegate void OnValueAmountAtCallback(Vector2 worldPos, int amount);
 
-    public Color backgroundColor = Color.black;
-
-    public event OnValueChangeCallback scoreChangeCallback;
-    public event OnValueAmountAtCallback scoreAtCallback;
-    public event System.Action<SignalType, object> signalCallback; //listen to signals from mission control
-
-    private int mCurScore;
-    private M8.StatsController mStats;
-
     public virtual int missionIndex { get { return -1; } }
-        
+
     public int score {
         get { return mCurScore; }
 
@@ -45,14 +36,30 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
                 var prev = mCurScore;
                 mCurScore = value;
 
-                if(scoreChangeCallback != null)
-                    scoreChangeCallback(mCurScore, prev);
+                HUD.instance.UpdateScore(mCurScore, prev);
             }
         }
     }
 
     public M8.StatsController stats { get { return mStats; } }
 
+    public bool inputLock {
+        get { return mInputLock; }
+        set {
+            if(mInputLock != value) {
+                mInputLock = value;
+                SetLock(mInputLock);
+            }
+        }
+    }
+
+    public event OnValueAmountAtCallback scoreAtCallback;
+    public event System.Action<SignalType, object> signalCallback; //listen to signals from mission control
+
+    private int mCurScore;
+    private M8.StatsController mStats;
+    private bool mInputLock;
+        
     public void ScoreAt(Vector2 worldPos, int scoreAmt) {
         score += scoreAmt;
 
@@ -83,13 +90,16 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         return null;
     }
 
+    protected virtual void SetLock(bool aLock) {
+
+    }
+
     protected void SendSignal(SignalType signal, object parms) {
         if(signalCallback != null)
             signalCallback(signal, parms);
     }
 
     protected override void OnInstanceDeinit() {
-        
     }
 
     protected override void OnInstanceInit() {
@@ -97,7 +107,5 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         MissionManager.instance.SetMission(missionIndex);
 
         mStats = GetComponent<M8.StatsController>();
-
-        CameraController.instance.activeCamera.backgroundColor = backgroundColor;
     }
 }

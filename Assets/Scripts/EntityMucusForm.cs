@@ -8,7 +8,7 @@ public class EntityMucusForm : M8.EntityBase {
     public Rigidbody2D body;
     public CircleCollider2D circleCollider;
     public Transform root;
-
+    
     public M8.Animator.AnimatorData animator;
  
     public float radius {
@@ -96,31 +96,41 @@ public class EntityMucusForm : M8.EntityBase {
         switch((EntityState)state) {
             case EntityState.Normal:
                 body.simulated = false;
-
+                
                 if(mGrowRout == null)
                     animator.Play(stats.takeNormal);
                 break;
 
+            case EntityState.Select:
+                body.simulated = false;
+                
+                if(mGrowRout == null)
+                    animator.Play(stats.takeSelect);
+                break;
+
             case EntityState.Launch:
                 body.simulated = true;
+                body.isKinematic = false;
+                
                 mRout = StartCoroutine(DoLaunch());
                 break;
 
             case EntityState.Dead:
+                body.simulated = false;
+                
                 if(mGrowRout != null) {
                     StopCoroutine(mGrowRout);
                     mGrowRout = null;
 
                     ApplyGrowthToScale();
                 }
-
-                body.simulated = false;
-
+                                
                 animator.Play(stats.takeDeath);
                 break;
 
             case EntityState.Bind:
                 body.simulated = false;
+                
                 mRout = StartCoroutine(DoBound());
                 break;
         }
@@ -217,18 +227,20 @@ public class EntityMucusForm : M8.EntityBase {
                 root.gameObject.SetActive(false);
         }
     }
-
+    
     IEnumerator DoGrow(float aGrowthCount) {
-        root.gameObject.SetActive(true);
-
         animator.Play(stats.takeGrow);
-
+        
         float sScale;
         if(aGrowthCount > 0) {
             sScale = Mathf.Lerp(stats.radiusToRootScaleStart, stats.radiusToRootScaleEnd, aGrowthCount/stats.growthMaxCount);
         }
         else
             sScale = 0f;
+
+        root.localScale = new Vector3(sScale, sScale, 1f);
+
+        root.gameObject.SetActive(true);
 
         float curTime = 0f;
         while(curTime < stats.growthDelay) {
@@ -245,6 +257,8 @@ public class EntityMucusForm : M8.EntityBase {
 
         if(state == (int)EntityState.Normal)
             animator.Play(stats.takeNormal);
+        else if(state == (int)EntityState.Select)
+            animator.Play(stats.takeSelect);
 
         mGrowRout = null;
     }

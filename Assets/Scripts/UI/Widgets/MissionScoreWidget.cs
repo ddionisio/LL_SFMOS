@@ -5,24 +5,16 @@ using UnityEngine.UI;
 
 public class MissionScoreWidget : MonoBehaviour {
     public Text scoreLabel;
-
-    void OnDestroy() {
-        if(MissionController.instance)
-            MissionController.instance.scoreChangeCallback -= OnScoreUpdate;
+    
+    void OnDisable() {
+        if(HUD.instance)
+            HUD.instance.scoreChangeCallback -= OnScoreUpdate;
     }
 
-    void Awake() {
-        
+    void OnEnable() {
+        HUD.instance.scoreChangeCallback += OnScoreUpdate;
     }
-
-	// Use this for initialization
-	void Start () {
-        MissionController.instance.scoreChangeCallback += OnScoreUpdate;
-
-        //Apply initial score
-        scoreLabel.text = MissionController.instance.score.ToString();
-	}
-	
+    
     void OnScoreUpdate(int score, int prevScore) {
         //do fancy stuff
         scoreLabel.text = score.ToString();

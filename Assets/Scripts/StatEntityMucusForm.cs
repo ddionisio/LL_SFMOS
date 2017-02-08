@@ -17,6 +17,7 @@ public class StatEntityMucusForm : ScriptableObject {
     public string takeLaunch;
     public string takeBind;
     public string takeDeath;
+    public string takeSelect;
 
     [Header("Growth")]
     public int growthMaxCount;
