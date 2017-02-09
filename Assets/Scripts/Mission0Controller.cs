@@ -30,6 +30,7 @@ public class Mission0Controller : MissionController {
         public string id;
         public ActionType type;
         public string sVal;
+        public string[] sVals;
         public float fVal;
     }
 
@@ -98,6 +99,8 @@ public class Mission0Controller : MissionController {
 
     private M8.CacheList<EntityCommon> mCellWallsAlive;
 
+    private M8.GenericParams mParmsDialog;
+
     public override int missionIndex { get { return 0; } }
 
     public bool isProcessingVictims {
@@ -145,6 +148,8 @@ public class Mission0Controller : MissionController {
         mVictimCount = 0;
 
         mCellWallsAlive = new M8.CacheList<EntityCommon>(cellWalls.Length);
+
+        mParmsDialog = new M8.GenericParams();
     }
 
     IEnumerator Start() {
@@ -316,8 +321,15 @@ public class Mission0Controller : MissionController {
                     break;
 
                 case ActionType.Dialog:
-                    //open dialog
-                    //wait for close
+                    if(act.sVals != null && act.sVals.Length > 0)
+                        mParmsDialog[ModalDialog.parmStringRefs] = act.sVals;
+                    else
+                        mParmsDialog[ModalDialog.parmStringRefs] = new string[] { act.sVal };
+
+                    M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
+
+                    while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
+                        yield return null;
                     break;
 
                 case ActionType.InputLock:

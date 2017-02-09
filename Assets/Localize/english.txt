@@ -19,6 +19,16 @@
             "key": "start",
             "text": "START",
             "param": []
+        },
+        {
+            "key": "mission0_0_intro0",
+            "text": "Testing 123, I am a thing",
+            "param": []
+        },
+        {
+            "key": "mission0_0_intro1",
+            "text": "Testing 123, I am a thing also",
+            "param": []
         }
     ]
 }
