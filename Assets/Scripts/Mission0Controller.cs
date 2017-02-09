@@ -16,40 +16,9 @@ public class Mission0Controller : MissionController {
 
         Defeat,
     }
-
-    public enum ActionType {
-        Cutscene,
-        Dialog,
-        InputLock,
-        InputUnlock,
-        Wait
-    }
-
-    [System.Serializable]
-    public struct Action {
-        public string id;
-        public ActionType type;
-        public string sVal;
-        public string[] sVals;
-        public float fVal;
-    }
-
-    [System.Serializable]
-    public class StageData {
-        public GameObject activateGO;
-
-        public M8.Animator.AnimatorData anim;
-
-        public Action[] enterActions;
-        public Action[] exitActions;
-        
-        public float minDuration; //for stages with no pathogens
-
-        public float stageNextDelay = 3; //how long before the next stage transition
-    }
-
+    
     [Header("Stage Data")]    
-    public StageData[] stages; //determines stage and sub stages
+    public StageController[] stages;
 
     [Header("Main Animation")]
     public M8.Animator.AnimatorData mainAnimator; //general animator
@@ -98,9 +67,7 @@ public class Mission0Controller : MissionController {
     private int mVictimCount;
 
     private M8.CacheList<EntityCommon> mCellWallsAlive;
-
-    private M8.GenericParams mParmsDialog;
-
+    
     public override int missionIndex { get { return 0; } }
 
     public bool isProcessingVictims {
@@ -139,17 +106,13 @@ public class Mission0Controller : MissionController {
         for(int i = 0; i < pointerDisplays.Length; i++)
             pointerDisplays[i].SetActive(false);
 
-        for(int i = 0; i < stages.Length; i++) {
-            if(stages[i].activateGO)
-                stages[i].activateGO.SetActive(false);
-        }
+        for(int i = 0; i < stages.Length; i++)
+            stages[i].gameObject.SetActive(false);
 
         mEnemyCheckCount = 0;
         mVictimCount = 0;
 
         mCellWallsAlive = new M8.CacheList<EntityCommon>(cellWalls.Length);
-
-        mParmsDialog = new M8.GenericParams();
     }
 
     IEnumerator Start() {
@@ -240,20 +203,11 @@ public class Mission0Controller : MissionController {
     void EnterStage(int stage) {
         var prevStageInd = mCurStageInd;
 
-        if(prevStageInd >= 0 && prevStageInd < stages.Length) {
-            if(stages[prevStageInd].activateGO)
-                stages[prevStageInd].activateGO.SetActive(false);
-        }
-                
+        if(prevStageInd >= 0 && prevStageInd < stages.Length)
+            stages[prevStageInd].gameObject.SetActive(false);
+                        
         mCurStageInd = stage;
-
-        if(mCurStageInd >= 0 && mCurStageInd < stages.Length) {
-            if(stages[mCurStageInd].activateGO)
-                stages[mCurStageInd].activateGO.SetActive(true);
-        }
-
-        SendSignal(SignalType.NewStage, mCurStageInd);
-
+                
         if(prevStageInd >= 0)
             ApplyState(State.StageTransition);
         else
@@ -276,6 +230,11 @@ public class Mission0Controller : MissionController {
                     break;
 
                 case State.StagePlay:
+                    if(mCurStageInd >= 0 && mCurStageInd < stages.Length)
+                        stages[mCurStageInd].gameObject.SetActive(true);
+
+                    SendSignal(SignalType.NewStage, mCurStageInd);
+
                     mRout = StartCoroutine(DoStagePlay());
                     break;
 
@@ -309,43 +268,7 @@ public class Mission0Controller : MissionController {
         ApplyState(State.StagePlay);
     }
 
-    IEnumerator DoActions(M8.Animator.AnimatorData anim, Action[] actions) {
-        for(int i = 0; i < actions.Length; i++) {
-            var act = actions[i];
-
-            switch(act.type) {
-                case ActionType.Cutscene:
-                    anim.Play(act.id);
-                    while(anim.isPlaying)
-                        yield return null;
-                    break;
-
-                case ActionType.Dialog:
-                    if(act.sVals != null && act.sVals.Length > 0)
-                        mParmsDialog[ModalDialog.parmStringRefs] = act.sVals;
-                    else
-                        mParmsDialog[ModalDialog.parmStringRefs] = new string[] { act.sVal };
-
-                    M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
-
-                    while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
-                        yield return null;
-                    break;
-
-                case ActionType.InputLock:
-                    inputLock = true;
-                    break;
-
-                case ActionType.InputUnlock:
-                    inputLock = false;
-                    break;
-
-                case ActionType.Wait:
-                    yield return new WaitForSeconds(act.fVal);
-                    break;
-            }
-        }
-    }
+    
 
     IEnumerator DoStagePlay() {
         //if for some reason we are suppose to be finished
@@ -358,7 +281,9 @@ public class Mission0Controller : MissionController {
 
         var curStage = stages[mCurStageInd];
 
-        yield return DoActions(curStage.anim, curStage.enterActions);
+        yield return curStage.Enter();
+
+        Debug.Log("enter finish");
         
         //wait for all spawn checks to be released
         while(Time.time - startTime < curStage.minDuration || mEnemyCheckCount > 0)
@@ -368,6 +293,8 @@ public class Mission0Controller : MissionController {
 
         if(curStage.stageNextDelay > 0f)
             yield return new WaitForSeconds(curStage.stageNextDelay);
+
+        yield return curStage.Exit();
 
         mRout = null;
 
