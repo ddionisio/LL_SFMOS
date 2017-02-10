@@ -48,9 +48,18 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         set {
             if(mInputLock != value) {
                 mInputLock = value;
-                SetLock(mInputLock);
+                SetInputLock(mInputLock);
             }
         }
+    }
+
+    public virtual bool isStageTimePause {
+        get { return false; }
+        set {  }
+    }
+
+    public virtual int enemyCount {
+        get { return 0; }
     }
 
     public event OnValueAmountAtCallback scoreAtCallback;
@@ -90,7 +99,7 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         return null;
     }
 
-    protected virtual void SetLock(bool aLock) {
+    protected virtual void SetInputLock(bool aLock) {
 
     }
 

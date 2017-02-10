@@ -19,6 +19,8 @@ public class Mission0Controller : MissionController {
     
     [Header("Stage Data")]    
     public StageController[] stages;
+    public float timeDangerScale = 0.3f;
+    public GameObject dangerGO;
 
     [Header("Main Animation")]
     public M8.Animator.AnimatorData mainAnimator; //general animator
@@ -62,7 +64,8 @@ public class Mission0Controller : MissionController {
 
     private State mCurState = State.None;
     private Coroutine mRout;
-    
+
+    private bool mIsStageTimePause;
     private int mEnemyCheckCount; //if this reaches 0 after all sub stage finishes, go to next stage
     private int mVictimCount;
 
@@ -74,6 +77,15 @@ public class Mission0Controller : MissionController {
         get {
             return mVictimCount > 0 || macrophage.isEating;
         }
+    }
+        
+    public override bool isStageTimePause {
+        get { return mIsStageTimePause; }
+        set { mIsStageTimePause = value; }
+    }
+
+    public override int enemyCount {
+        get { return mEnemyCheckCount; }
     }
 
     protected override void OnInstanceDeinit() {
@@ -90,6 +102,9 @@ public class Mission0Controller : MissionController {
             if(cellWalls[i])
                 cellWalls[i].setStateCallback -= OnCellWallStateChanged;
         }
+
+        if(HUD.instance)
+            HUD.instance.SetMissionActive(false);
     }
 
     protected override void OnInstanceInit() {
@@ -130,12 +145,17 @@ public class Mission0Controller : MissionController {
             }
         }
 
-        mucusGatherInput.isLocked = true;
+        HUD.instance.SetMissionActive(true);
+        HUD.instance.SetTimeActive(false);
+
+        if(dangerGO) dangerGO.SetActive(false);
+
+        inputLock = true;
 
         while(M8.SceneManager.instance.isLoading)
             yield return null;
 
-        mucusGatherInput.isLocked = false;
+        inputLock = false;
 
         mCurStageInd = -1;
 
@@ -196,7 +216,7 @@ public class Mission0Controller : MissionController {
         StartCoroutine(DoVictimProcess(victimColl, victimStatCtrl, score));
     }
 
-    protected override void SetLock(bool aLock) {
+    protected override void SetInputLock(bool aLock) {
         mucusGatherInput.isLocked = aLock;
     }
 
@@ -207,7 +227,7 @@ public class Mission0Controller : MissionController {
             stages[prevStageInd].gameObject.SetActive(false);
                         
         mCurStageInd = stage;
-                
+                                
         if(prevStageInd >= 0)
             ApplyState(State.StageTransition);
         else
@@ -216,12 +236,24 @@ public class Mission0Controller : MissionController {
 
     void ApplyState(State state) {
         if(mCurState != state) {
-            //var prevState = mCurState;
+            var prevState = mCurState;
             mCurState = state;
 
             if(mRout != null) {
                 StopCoroutine(mRout);
                 mRout = null;
+            }
+            
+            switch(prevState) {
+                case State.StagePlay:
+                    HUD.instance.SetTimeActive(false);
+
+                    if(dangerGO) dangerGO.SetActive(false);
+
+                    mEnemyCheckCount = 0;
+
+                    mIsStageTimePause = false;
+                    break;
             }
 
             switch(state) {
@@ -232,6 +264,11 @@ public class Mission0Controller : MissionController {
                 case State.StagePlay:
                     if(mCurStageInd >= 0 && mCurStageInd < stages.Length)
                         stages[mCurStageInd].gameObject.SetActive(true);
+                                        
+                    if(stages[mCurStageInd].duration > 0f) {
+                        HUD.instance.SetTimeActive(true);
+                        HUD.instance.UpdateTime(stages[mCurStageInd].duration);
+                    }
 
                     SendSignal(SignalType.NewStage, mCurStageInd);
 
@@ -250,7 +287,7 @@ public class Mission0Controller : MissionController {
     }
     
     IEnumerator DoStageTransition() {
-        mucusGatherInput.isLocked = false;
+        inputLock = true;
 
         //show incoming
 
@@ -265,6 +302,8 @@ public class Mission0Controller : MissionController {
 
         mRout = null;
 
+        inputLock = false;
+
         ApplyState(State.StagePlay);
     }
 
@@ -276,39 +315,91 @@ public class Mission0Controller : MissionController {
             ApplyState(State.Victory);
             yield break;
         }
-
+                
         var startTime = Time.time;
 
         var curStage = stages[mCurStageInd];
 
-        yield return curStage.Enter();
+        yield return curStage.Enter(this);
 
-        Debug.Log("enter finish");
-        
-        //wait for all spawn checks to be released
-        while(Time.time - startTime < curStage.minDuration || mEnemyCheckCount > 0)
-            yield return null;
+        inputLock = false; //should always be unlocked by the time we get here
 
-        //move specific entities to the left?
+        float curDuration = curStage.duration;
+        bool isGameover = false;
 
-        if(curStage.stageNextDelay > 0f)
-            yield return new WaitForSeconds(curStage.stageNextDelay);
+        curStage.Play(this);
 
-        yield return curStage.Exit();
+        if(curDuration > 0f) {
+            mIsStageTimePause = false;
 
-        mRout = null;
+            bool isDanger = false;
+            
+            float dangerDuration = curDuration*timeDangerScale;
 
-        //go to next stage?
-        if(mCurStageInd < stages.Length - 1) {
-            EnterStage(mCurStageInd + 1);
+            while(true) {
+                yield return null;
+
+                if(!mIsStageTimePause) {
+                    curDuration -= Time.deltaTime;
+                    if(curDuration < 0f)
+                        curDuration = 0f;
+                }
+
+                HUD.instance.UpdateTime(curDuration);
+
+                //win stage if play is over
+                if(!curStage.isPlaying)
+                    break;
+
+                if(curDuration == 0f) {
+                    curStage.CancelPlay();
+
+                    isGameover = true;
+                    break;
+                }
+
+                if(!isDanger) {
+                    if(isDanger = curDuration <= dangerDuration) {
+                        if(dangerGO)
+                            dangerGO.SetActive(true);
+                    }
+                }
+            }
         }
-        else { //victory
-            ApplyState(State.Victory);
+        else {
+            while(curStage.isPlaying)
+                yield return null;
+        }
+
+        if(isGameover) {
+            mRout = null;
+
+            ApplyState(State.Defeat);
+        }
+        else {
+            //display time bonus
+            if(curDuration > 0f) {
+
+            }
+
+            //move specific entities to the left?
+
+            yield return curStage.Exit(this);
+
+            mRout = null;
+
+            //go to next stage?
+            if(mCurStageInd < stages.Length - 1) {
+                EnterStage(mCurStageInd + 1);
+            }
+            else { //victory
+                ApplyState(State.Victory);
+            }
         }
     }
 
     IEnumerator DoVictory() {
-        mucusGatherInput.isLocked = true;
+        inputLock = true;
 
         SendSignal(SignalType.Complete, 0);
 
@@ -329,7 +420,7 @@ public class Mission0Controller : MissionController {
     }
 
     IEnumerator DoDefeat() {
-        mucusGatherInput.isLocked = true;
+        inputLock = true;
 
         SendSignal(SignalType.Defeat, 0);
 
@@ -467,8 +558,8 @@ public class Mission0Controller : MissionController {
 
                 Debug.Log("cell wall dead: "+ent.name);
 
-                if(mCellWallsAlive.Count <= 0)
-                    ApplyState(State.Defeat);
+                //if(mCellWallsAlive.Count <= 0)
+                    //ApplyState(State.Defeat);
                 break;
         }
     }

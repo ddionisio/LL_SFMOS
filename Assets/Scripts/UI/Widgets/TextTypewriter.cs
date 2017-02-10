@@ -7,6 +7,8 @@ public class TextTypewriter : MonoBehaviour {
     public Text text;
     public float delay;
 
+    public bool useRealTime;
+
     public event System.Action proceedCallback;
     public event System.Action doneCallback;
 
@@ -51,7 +53,7 @@ public class TextTypewriter : MonoBehaviour {
     }
 
     IEnumerator DoType() {
-        var wait = new WaitForSeconds(delay);
+        var wait = useRealTime ? null : new WaitForSeconds(delay);
 
         text.text = "";
         
@@ -62,7 +64,13 @@ public class TextTypewriter : MonoBehaviour {
 
         int count = mString.Length;
         for(int i = 0; i < count; i++) {
-            yield return wait;
+            if(useRealTime) {
+                var lastTime = Time.realtimeSinceStartup;
+                while(Time.realtimeSinceStartup - lastTime < delay)
+                    yield return null;
+            }
+            else
+                yield return wait;
 
             mStringBuff.Append(mString[i]);
 
