@@ -13,13 +13,28 @@ public class EntitySpawnAt : MonoBehaviour {
 
     [Header("Launch")]
     public EntityState launchState; //which state to set once Launch is called
+    public Transform launchFollowTarget; //if you want the spawn to follow something upon launch, may not work on certain entities and certain states
 
     private EntityCommon mSpawned;
 
     //call by animator to release the spawn and do its own thing
     public void Launch() {
-        if(mSpawned)
+        if(mSpawned) {
             mSpawned.state = (int)launchState;
+
+            if(launchFollowTarget)
+                mSpawned.Follow(launchFollowTarget);
+        }
+    }
+
+    /// <summary>
+    /// Don't call this on certain states, e.g. Dead
+    /// </summary>
+    public void ChangeStateAndFollow(EntityState state, Transform t) {
+        if(mSpawned) {
+            mSpawned.state = (int)state;
+            mSpawned.Follow(t);
+        }
     }
 
     public void Cancel() {

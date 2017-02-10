@@ -10,9 +10,10 @@ public class ModalDialogComposite : ModalDialogBase {
 
     [System.Serializable]
     public struct PairRef {
-        public string compositeName;
         [M8.Localize]
         public string stringRef;
+
+        public string compositeName;        
     }
 
     public GameObject[] composites; //use name as reference

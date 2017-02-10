@@ -4,7 +4,7 @@ using UnityEngine;
 
 using M8.UIModal.Interface;
 
-public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush, IActive {
+public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
     public TextTypewriter textTypewriter;
     public GameObject readyGO;
 
@@ -65,11 +65,7 @@ public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush, IActive {
             mIsPaused = false;
         }
     }
-
-    public virtual void SetActive(bool aActive) {
-
-    }
-
+    
     void OnTypewriterFinish() {
         readyGO.SetActive(true);
     }

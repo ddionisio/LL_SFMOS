@@ -10,9 +10,10 @@ public class ModalDialogImage : ModalDialogBase {
 
     [System.Serializable]
     public struct PairRef {
-        public Sprite sprite;
         [M8.Localize]
         public string stringRef;
+
+        public Sprite sprite;        
     }
 
     public Image imageDisplay;

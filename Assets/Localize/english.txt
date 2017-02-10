@@ -34,6 +34,36 @@
             "key": "mission0_0_macrophage0",
             "text": "Hi, I'm a macrophage",
             "param": []
+        },
+        {
+            "key": "result_time",
+            "text": "TIME:",
+            "param": []
+        },
+        {
+            "key": "result_score",
+            "text": "SCORE:",
+            "param": []
+        },
+        {
+            "key": "mission0_0_incoming0",
+            "text": "Here comes trouble!",
+            "param": []
+        },
+        {
+            "key": "mission0_1_explainTime0",
+            "text": "Subdue all the pathogens before time runs out!",
+            "param": []
+        },
+        {
+            "key": "mission0_1_explainPathogen0",
+            "text": "Here's a pathogen, kill the bugger.",
+            "param": []
+        },
+        {
+            "key": "mission0_1_explainPathogen1",
+            "text": "Hit it with a mucus.",
+            "param": []
         }
     ]
 }

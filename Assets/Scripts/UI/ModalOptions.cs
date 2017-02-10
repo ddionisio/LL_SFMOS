@@ -5,7 +5,7 @@ using M8.UIModal.Interface;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ModalOptions : M8.UIModal.Controller, IActive, IPush, IPop {
+public class ModalOptions : M8.UIModal.Controller, IPush, IPop {
     public Slider musicSlider;
     public Slider soundSlider;
 
@@ -16,7 +16,9 @@ public class ModalOptions : M8.UIModal.Controller, IActive, IPush, IPop {
         soundSlider.onValueChanged.AddListener(OnSoundSliderValue);
     }
 
-    void IActive.SetActive(bool aActive) {
+    public override void SetActive(bool aActive) {
+        base.SetActive(aActive);
+
         if(aActive) {
             musicSlider.value = LoLManager.instance.musicVolume;
             soundSlider.value = LoLManager.instance.soundVolume;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Mission0Controller : MissionController {
-    public const string takeStageFormat = "stage_{0}_{1}";
+    public const string modalTimeBonus = "timeBonus";
 
     public enum State {
         None,
@@ -21,6 +21,8 @@ public class Mission0Controller : MissionController {
     public StageController[] stages;
     public float timeDangerScale = 0.3f;
     public GameObject dangerGO;
+
+    public float timeScoreMultiplier = 100f;
 
     public GameObject incomingGO;
     public float incomingDelay = 1.4f;
@@ -70,6 +72,8 @@ public class Mission0Controller : MissionController {
     private bool mIsStageTimePause;
     private int mEnemyCheckCount; //if this reaches 0 after all sub stage finishes, go to next stage
     private int mVictimCount;
+
+    private M8.GenericParams mModalTimeResultParams;
 
     private M8.CacheList<EntityCommon> mCellWallsAlive;
     
@@ -130,6 +134,8 @@ public class Mission0Controller : MissionController {
         mVictimCount = 0;
 
         mCellWallsAlive = new M8.CacheList<EntityCommon>(cellWalls.Length);
+
+        mModalTimeResultParams = new M8.GenericParams();
     }
 
     IEnumerator Start() {
@@ -221,7 +227,7 @@ public class Mission0Controller : MissionController {
     protected override void SetInputLock(bool aLock) {
         mucusGatherInput.isLocked = aLock;
     }
-
+        
     void EnterStage(int stage) {
         var prevStageInd = mCurStageInd;
 
@@ -292,7 +298,11 @@ public class Mission0Controller : MissionController {
             }
         }
     }
-    
+
+    int ComputeTimeBonusScore(float time) {
+        return Mathf.RoundToInt(time*timeScoreMultiplier);
+    }
+
     IEnumerator DoStageTransition() {
         inputLock = true;
 
@@ -305,14 +315,10 @@ public class Mission0Controller : MissionController {
         //apply progress animation to HUD
         
         mRout = null;
-
-        inputLock = false;
-
+                
         ApplyState(State.StagePlay);
     }
-
-    
-
+        
     IEnumerator DoStagePlay() {
         //if for some reason we are suppose to be finished
         if(mCurStageInd >= stages.Length) {
@@ -324,9 +330,13 @@ public class Mission0Controller : MissionController {
 
         var curStage = stages[mCurStageInd];
 
+        inputLock = true; //default as locked, stage can unlock it if needed
+
         yield return curStage.Enter(this);
 
-        inputLock = false; //should always be unlocked by the time we get here
+        //start playing
+
+        inputLock = false; //default as unlocked, stage can lock it if needed
 
         float curDuration = curStage.duration;
         bool isGameover = false;
@@ -355,6 +365,7 @@ public class Mission0Controller : MissionController {
                 if(!curStage.isPlaying)
                     break;
 
+                //time ran out
                 if(curDuration == 0f) {
                     curStage.CancelPlay();
 
@@ -370,7 +381,7 @@ public class Mission0Controller : MissionController {
                 }
             }
         }
-        else {
+        else { //just wait for end
             while(curStage.isPlaying)
                 yield return null;
         }
@@ -382,8 +393,17 @@ public class Mission0Controller : MissionController {
         }
         else {
             //display time bonus
-            if(curDuration > 0f) {
+            int scoreBonus = ComputeTimeBonusScore(curDuration);
+            if(scoreBonus > 0) {
+                mModalTimeResultParams[ModalTimeBonus.parmTime] = curDuration;
+                mModalTimeResultParams[ModalTimeBonus.parmMult] = timeScoreMultiplier;
 
+                M8.UIModal.Manager.instance.ModalOpen(modalTimeBonus, mModalTimeResultParams);
+
+                while(M8.UIModal.Manager.instance.ModalIsInStack(modalTimeBonus) || M8.UIModal.Manager.instance.isBusy)
+                    yield return null;
+
+                score += scoreBonus;
             }
 
             //move specific entities to the left?

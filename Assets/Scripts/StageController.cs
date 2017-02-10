@@ -264,6 +264,9 @@ public class StageController : MonoBehaviour {
     }
         
     void OnDrawGizmos() {
+        if(selects == null)
+            return;
+
         Gizmos.color = new Color(0.9568f, 0.52549f, 0.1058f);
         for(int i = 0; i < selects.Length; i++) {
             var bound = selects[i].bounds;
