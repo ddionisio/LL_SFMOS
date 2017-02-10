@@ -22,10 +22,12 @@ public class Mission0Controller : MissionController {
     public float timeDangerScale = 0.3f;
     public GameObject dangerGO;
 
+    public GameObject incomingGO;
+    public float incomingDelay = 1.4f;
+
     [Header("Main Animation")]
     public M8.Animator.AnimatorData mainAnimator; //general animator
-
-    public string takeStageTransition; //do some woosh thing towards left
+    
     public string takeDefeat;
     public string takeVictory;
                 
@@ -254,6 +256,11 @@ public class Mission0Controller : MissionController {
 
                     mIsStageTimePause = false;
                     break;
+
+                case State.StageTransition:
+                    if(incomingGO)
+                        incomingGO.SetActive(false);
+                    break;
             }
 
             switch(state) {
@@ -290,16 +297,13 @@ public class Mission0Controller : MissionController {
         inputLock = true;
 
         //show incoming
+        if(incomingGO)
+            incomingGO.SetActive(true);
 
+        yield return new WaitForSeconds(incomingDelay);
+                
         //apply progress animation to HUD
-
-        if(!string.IsNullOrEmpty(takeStageTransition)) {
-            mainAnimator.Play(takeStageTransition);
-
-            while(mainAnimator.isPlaying)
-                yield return null;
-        }
-
+        
         mRout = null;
 
         inputLock = false;
