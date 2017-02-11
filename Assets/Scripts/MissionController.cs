@@ -62,18 +62,27 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         get { return 0; }
     }
 
+    public bool isRetry { get { return mIsRetry; } }
+
     public event OnValueAmountAtCallback scoreAtCallback;
     public event System.Action<SignalType, object> signalCallback; //listen to signals from mission control
 
     private int mCurScore;
     private M8.StatsController mStats;
     private bool mInputLock;
+    private bool mIsRetry;
         
     public void ScoreAt(Vector2 worldPos, int scoreAmt) {
         score += scoreAmt;
 
         if(scoreAtCallback != null)
             scoreAtCallback(worldPos, scoreAmt);
+    }
+
+    public void ResetScore(int toScore) {
+        mCurScore = toScore;
+
+        HUD.instance.UpdateScore(toScore, toScore);
     }
 
     public void ProcessVictory() {
@@ -91,6 +100,9 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         ScoreAt(victimStatCtrl.transform.position, score);
     }
 
+    /// <summary>
+    /// Signal to Mission Control
+    /// </summary>
     public virtual void Signal(SignalType signal, object parms) {
 
     }
@@ -99,10 +111,19 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         return null;
     }
 
+    public virtual void Retry() {
+        M8.SceneState.instance.global.SetValue(SceneStateVars.isRetry, 1, false);
+
+        MissionManager.instance.Play();
+    }
+
     protected virtual void SetInputLock(bool aLock) {
 
     }
 
+    /// <summary>
+    /// Broadcast Signal from Mission Control to listeners via signalCallback
+    /// </summary>
     protected void SendSignal(SignalType signal, object parms) {
         if(signalCallback != null)
             signalCallback(signal, parms);
@@ -116,5 +137,22 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         MissionManager.instance.SetMission(missionIndex);
 
         mStats = GetComponent<M8.StatsController>();
+    }
+
+    protected virtual IEnumerator Start() {
+
+        int toScore = 0;
+
+        mIsRetry = M8.SceneState.instance.global.GetValue(SceneStateVars.isRetry) > 0;
+        if(mIsRetry) {
+            M8.SceneState.instance.global.DeleteValue(SceneStateVars.isRetry, false);
+
+            toScore = M8.SceneState.instance.global.GetValue(SceneStateVars.curScore);
+
+        }
+
+        ResetScore(toScore);
+
+        yield return null;
     }
 }

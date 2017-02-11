@@ -4,13 +4,24 @@ using UnityEngine;
 
 [CreateAssetMenu(fileName = "mucusForm", menuName = "Stats/Mucus Form")]
 public class StatEntityMucusForm : ScriptableObject {
-    [Header("Radius")]
-    public float radiusStart;
-    public float radiusEnd;
+    [System.Serializable]
+    public struct GrowData {
+        [Header("Radius")]
+        public float radius;
+        public float scale;
 
-    public float radiusToRootScaleStart;
-    public float radiusToRootScaleEnd;
+        [Header("Launch")]
+        public float launchForceGrowthDecayDelay;
 
+        [Header("Stats")]
+        public float HP;
+        public float damage;
+        public float damageStamina;
+        public float impactForce;
+        public int splitCount;
+        public int splitGrowth;
+    }
+    
     [Header("Takes")]
     public string takeNormal;
     public string takeGrow;
@@ -20,7 +31,8 @@ public class StatEntityMucusForm : ScriptableObject {
     public string takeSelect;
 
     [Header("Growth")]
-    public int growthMaxCount;
+    public GrowData[] growths;
+    
     public float growthDelay = 0.5f;
 
     [Header("Launch")]
@@ -30,53 +42,51 @@ public class StatEntityMucusForm : ScriptableObject {
     public float launchForceMaxDistance;
     public AnimationCurve launchForceCurve;
     public float launchDuration;
-
-    public float launchForceGrowthDecayMinDelay = 3f;
-    public float launchForceGrowthDecayMaxDelay = 1f;
+    
     public AnimationCurve launchForceDecayCurve;
-
-    [Header("Stats")]
-    public float HPMin;
-    public float HPMax;
-
+    
     [Header("Attack")]
     public string[] attackTagFilter;
     public LayerMask attackSplitLayerMask; //to determine which objects to split towards
-
-    public float damageMin;
-    public float damageMax;
-
-    public float damageStaminaMin;
-    public float damageStaminaMax;
-
-    public float impactForceMin;
-    public float impactForceMax;
-
+    
     public float excessRadius;
-    public int excessMaxSplitCount;
+
+    public int growthMaxCount { get { return growths.Length; } }
+
+    public float GetRadius(int curGrowth) {
+        return growths[curGrowth].radius;
+    }
+
+    public float GetScale(int curGrowth) {
+        return growths[curGrowth].scale;
+    }
 
     public float GetDamage(int curGrowth) {
-        float t = (float)curGrowth/growthMaxCount;
-
-        return Mathf.Lerp(damageMin, damageMax, t);
+        return growths[curGrowth].damage;
     }
 
     public float GetDamageStamina(int curGrowth) {
-        float t = (float)curGrowth/growthMaxCount;
-
-        return Mathf.Lerp(damageStaminaMin, damageStaminaMax, t);
+        return growths[curGrowth].damageStamina;
     }
 
     public float GetImpactForce(int curGrowth) {
-        float t = (float)curGrowth/growthMaxCount;
-
-        return Mathf.Lerp(impactForceMin, impactForceMax, t);
+        return growths[curGrowth].impactForce;
     }
 
     public float GetHP(int curGrowth) {
-        float t = (float)curGrowth/growthMaxCount;
+        return growths[curGrowth].HP;
+    }
 
-        return Mathf.Lerp(HPMin, HPMax, t);
+    public float GetLaunchForceDecayDelay(int curGrowth) {
+        return growths[curGrowth].launchForceGrowthDecayDelay;
+    }
+
+    public int GetSplitCount(int curGrowth) {
+        return growths[curGrowth].splitCount;
+    }
+
+    public int GetSplitGrowth(int curGrowth) {
+        return growths[curGrowth].splitGrowth;
     }
 
     public bool IsAttackValid(string tag) {

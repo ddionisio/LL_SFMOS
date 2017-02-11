@@ -17,6 +17,6 @@ public class MissionTimeWidget : MonoBehaviour {
 
     void OnTimeUpdate(float time) {
         //do fancy stuff
-        text.text = time.ToString("sss\\.ff");
+        text.text = Utility.TimerFormat(time);
     }
 }

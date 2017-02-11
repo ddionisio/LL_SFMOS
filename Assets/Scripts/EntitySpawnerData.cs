@@ -20,4 +20,6 @@ public class EntitySpawnerData : ScriptableObject {
     public float spawnFullDelay;
         
     public bool spawnIgnoreRotation;
+
+    public EntityState spawnRemoveFromCheckState = EntityState.Invalid; //remove from tracking list if entity enters this state
 }

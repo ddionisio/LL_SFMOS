@@ -9,7 +9,7 @@ public class ModalLose : M8.UIModal.Controller, IPush, IPop {
     public M8.SceneAssetPath quitScene;
 
     public void Retry() {
-        MissionManager.instance.Play();
+        MissionController.instance.Retry();
     }
 
     public void Quit() {

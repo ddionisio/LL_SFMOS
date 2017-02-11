@@ -29,6 +29,7 @@ public class StatEntity : ScriptableObject {
     public int score; //score upon death
 
     public bool registerAsEnemy; //register as enemy for mission controller
+    public bool isEdible; //can be processed by macrophage?
 
     [Header("Seek")]
     public float seekDelay; //for seek state
@@ -61,6 +62,7 @@ public class StatEntity : ScriptableObject {
     public string takeSeek;
     public string takeDeath;
     public string takeAttack;
+    public string takeHurt;
 
     public bool canSplit {
         get { return !string.IsNullOrEmpty(splitSpawnPoolGroup) && splitSpawnPoolEntityTypes.Length > 0; }

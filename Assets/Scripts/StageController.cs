@@ -68,9 +68,11 @@ public class StageController : MonoBehaviour {
     public DialogCompositeLookup[] dialogComposites;
     public SelectAreaLookup[] selects;
     
-    [Header("Actions")]
+    [Header("Enter")]
     public Action[] enterActions;
+    [Header("Play")]
     public Action[] playActions;
+    [Header("Exit")]
     public Action[] exitActions;
 
     public float duration; //duration before it goes game over, set to 0 for pure cutscene
@@ -242,8 +244,9 @@ public class StageController : MonoBehaviour {
                     break;
 
                 case ActionType.WaitEnemyCount:
-                    while(missionCtrl.enemyCount > 0)
+                    do {
                         yield return null;
+                    } while(missionCtrl.enemyCount > 0);
                     break;
 
                 case ActionType.Wait:

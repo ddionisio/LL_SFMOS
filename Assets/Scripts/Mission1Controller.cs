@@ -88,7 +88,9 @@ public class Mission1Controller : MissionController {
         mStageSpawnChecks = new List<M8.PoolDataController>();
     }
 
-    IEnumerator Start() {
+    protected override IEnumerator Start() {
+        yield return base.Start();
+
         //hook stuff up after others init
         //hook stuff up after others init
         if(!string.IsNullOrEmpty(stageSpawnCheckPoolGroup)) {

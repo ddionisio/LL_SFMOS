@@ -18,14 +18,17 @@ public class EntityCommon : M8.EntityBase {
 
         set {
             if(mAnchor != value) {
+                //var prevAnchor = mAnchor;
                 mAnchor = value;
                 if(mAnchor) {
+                    //Debug.Log(name+" anchor to "+mAnchor.name);
                     mBody.isKinematic = true; //force to kinematic
 
                     if(mAnchorRout == null)
                         mAnchorRout = StartCoroutine(DoAnchorUpdate());
                 }
                 else {
+                    //Debug.Log(name+" anchor unset from: "+prevAnchor.name);
                     if(mAnchorRout != null) {
                         StopCoroutine(mAnchorRout);
                         mAnchorRout = null;

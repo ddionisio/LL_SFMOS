@@ -138,7 +138,9 @@ public class Mission0Controller : MissionController {
         mModalTimeResultParams = new M8.GenericParams();
     }
 
-    IEnumerator Start() {
+    protected override IEnumerator Start() {
+        yield return base.Start();
+
         //hook stuff up after others init
         
         mucusGatherInput.pointerDownCallback += OnMucusFieldInputDown;
@@ -167,7 +169,16 @@ public class Mission0Controller : MissionController {
 
         mCurStageInd = -1;
 
-        EnterStage(0);
+        int toStage = 0;
+
+        if(isRetry) {
+            toStage = M8.SceneState.instance.global.GetValue(SceneStateVars.curStage);
+        }
+        else {
+            toStage = M8.SceneState.instance.global.GetValue(SceneStateVars.debugStartStage);
+        }
+
+        EnterStage(toStage);
     }
 
     void SetPointerActive(bool active) {
@@ -227,7 +238,14 @@ public class Mission0Controller : MissionController {
     protected override void SetInputLock(bool aLock) {
         mucusGatherInput.isLocked = aLock;
     }
-        
+
+    public override void Retry() {
+        if(mCurStageInd >= 0)
+            M8.SceneState.instance.global.SetValue(SceneStateVars.curStage, mCurStageInd, false);
+
+        base.Retry();
+    }
+
     void EnterStage(int stage) {
         var prevStageInd = mCurStageInd;
 
@@ -235,9 +253,13 @@ public class Mission0Controller : MissionController {
             stages[prevStageInd].gameObject.SetActive(false);
                         
         mCurStageInd = stage;
-                                
-        if(prevStageInd >= 0)
+
+        if(prevStageInd >= 0) {
+            //save score state for retry
+            M8.SceneState.instance.global.SetValue(SceneStateVars.curScore, score, false);
+
             ApplyState(State.StageTransition);
+        }
         else
             ApplyState(State.StagePlay);
     }
@@ -325,10 +347,15 @@ public class Mission0Controller : MissionController {
             ApplyState(State.Victory);
             yield break;
         }
-                
-        var startTime = Time.time;
-
+        
         var curStage = stages[mCurStageInd];
+
+        if(isRetry) {
+            //revert some states
+
+            if(mCurStageInd > 1) //activate mucus
+                ActivateSpawners();
+        }
 
         inputLock = true; //default as locked, stage can unlock it if needed
 
@@ -353,7 +380,8 @@ public class Mission0Controller : MissionController {
             while(true) {
                 yield return null;
 
-                if(!mIsStageTimePause) {
+                //don't count when macrophage is eating
+                if(!mIsStageTimePause && !isProcessingVictims) {
                     curDuration -= Time.deltaTime;
                     if(curDuration < 0f)
                         curDuration = 0f;
@@ -406,7 +434,8 @@ public class Mission0Controller : MissionController {
                 score += scoreBonus;
             }
 
-            //move specific entities to the left?
+            //move specific entities?
+            SendSignal(SignalType.Leave, null);
 
             yield return curStage.Exit(this);
 

@@ -11,6 +11,8 @@ public class ModalWorldSelect : M8.UIModal.Controller, IPush {
     public const string parmBoundsRefs = "bounds";
 
     public RectTransform target;
+
+    public float autoCloseDelay = 1.0f;
         
     void IPush.Push(M8.GenericParams parms) {
         var cam = parms.GetValue<Camera>(parmCamRefs);
@@ -27,5 +29,18 @@ public class ModalWorldSelect : M8.UIModal.Controller, IPush {
 
         target.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Abs(max.x - min.x));
         target.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Abs(max.y - min.y));
+    }
+
+    public override void SetActive(bool aActive) {
+        if(aActive)
+            StartCoroutine(DoAutoClose());
+        else
+            StopAllCoroutines();
+    }
+
+    IEnumerator DoAutoClose() {
+        yield return new WaitForSeconds(autoCloseDelay);
+
+        Close();
     }
 }

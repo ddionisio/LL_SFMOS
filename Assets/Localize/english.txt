@@ -64,6 +64,11 @@
             "key": "mission0_1_explainPathogen1",
             "text": "Hit it with a mucus.",
             "param": []
+        },
+        {
+            "key": "mission0_1_pathogenKilled0",
+            "text": "Good work, now to take care of the rest.",
+            "param": []
         }
     ]
 }

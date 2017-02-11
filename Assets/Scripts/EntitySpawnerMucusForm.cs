@@ -6,7 +6,6 @@ public class EntitySpawnerMucusForm : MonoBehaviour {
     public EntitySpawner spawner;
 
     public int growth;
-    public bool isMaxGrowth;
     
     void OnDestroy() {
         if(spawner)
@@ -18,12 +17,10 @@ public class EntitySpawnerMucusForm : MonoBehaviour {
     }
 
     void OnEntitySpawn(EntitySpawner aSpawner, M8.EntityBase ent) {
-        if(isMaxGrowth || growth > 0) {
+        if(growth > 0) {
             var mucusForm = (EntityMucusForm)ent;
-
-            var growVal = isMaxGrowth ? mucusForm.stats.growthMaxCount : growth;
-
-            mucusForm.SetGrow(growVal);
+            
+            mucusForm.SetGrow(growth);
         }
     }
 }

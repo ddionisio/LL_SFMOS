@@ -97,7 +97,15 @@ public class FlockUnit : MonoBehaviour {
         get { return mMoveTargetDir; }
     }
         
-    public float moveScale { get { return mMoveScale; } set { mMoveScale = value; } }
+    public float moveScale {
+        get {
+            return mMoveScale;
+        }
+
+        set {
+            mMoveScale = value;
+        }
+    }
 
     public virtual void Stop() {
         moveTarget = null;
@@ -112,7 +120,9 @@ public class FlockUnit : MonoBehaviour {
         moveTarget = null;
 
         mMaxSpeedScale = 1.0f;
-        
+
+        mMoveScale = 1.0f;
+
         sensor.items.Clear();
     }
 

@@ -233,13 +233,28 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
         mSpawningRout = null;
     }
 
+    void EntityRegisterCallbacks(EntityBase entity, bool register) {
+        if(register) {
+            entity.releaseCallback += OnEntityReleased;
+
+            if(data.spawnRemoveFromCheckState != EntityState.Invalid)
+                entity.setStateCallback += OnEntityChangedState;
+        }
+        else {
+            entity.releaseCallback -= OnEntityReleased;
+
+            if(data.spawnRemoveFromCheckState != EntityState.Invalid)
+                entity.setStateCallback -= OnEntityChangedState;
+        }
+    }
+
     EntityBase Spawn(PoolController pool, Vector3 spawnPos, Quaternion spawnRot, GenericParams parms) {
         var spawned = pool.Spawn(data.entityRef, data.entityRef, spawnTo, spawnPos, spawnRot, null);
 
         var entity = spawned.GetComponent<EntityBase>();
         if(entity && !mSpawnedEntities.Exists(entity)) {
             mSpawnedEntities.Add(entity);
-            entity.releaseCallback += OnEntityReleased;
+            EntityRegisterCallbacks(entity, true);
         }
 
         if(spawnCallback != null)
@@ -258,15 +273,22 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
 
         foreach(var ent in mSpawnedEntities) {
             if(ent)
-                ent.releaseCallback -= OnEntityReleased;
+                EntityRegisterCallbacks(ent, false);
         }
 
         mSpawnedEntities.Clear();
     }
 
+    void OnEntityChangedState(EntityBase ent) {
+        if((EntityState)ent.state == data.spawnRemoveFromCheckState) {
+            mSpawnedEntities.Remove(ent);
+            EntityRegisterCallbacks(ent, false);
+        }
+    }
+
     void OnEntityReleased(EntityBase ent) {
         mSpawnedEntities.Remove(ent);
-        ent.releaseCallback -= OnEntityReleased;        
+        EntityRegisterCallbacks(ent, false);
     }
 
     void OnDrawGizmos() {

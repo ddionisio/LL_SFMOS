@@ -5,9 +5,11 @@ using UnityEngine;
 public class EntityDebris : EntityCommon {
     public const float roamTorqueMin = -1.5f;
     public const float roamTorqueMax = 1.5f;
-    
+
+    private int mTakeHurtInd;
+
     private Coroutine mRout;
-    
+
     protected override void StateChanged() {
         if(mRout != null) {
             StopCoroutine(mRout);
@@ -66,8 +68,12 @@ public class EntityDebris : EntityCommon {
                 }
 
                 //animation
+                if(animator && !string.IsNullOrEmpty(stats.data.takeDeath))
+                    animator.Play(stats.data.takeDeath);
+                else if(stats.data.releaseOnDeath)
+                    Release();
 
-                Release();
+                //Release();
                 break;
         }
     }
@@ -90,16 +96,26 @@ public class EntityDebris : EntityCommon {
         //start ai, player control, etc
     }*/
 
-    /*protected override void OnDestroy() {
+    protected override void OnDestroy() {
         //dealloc here
+        if(animator)
+            animator.takeCompleteCallback -= OnAnimatorComplete;
 
         base.OnDestroy();
-    }*/
+    }
 
-    /*protected override void Awake() {
+    protected override void Awake() {
         base.Awake();
-        
-    }*/
+
+        mTakeHurtInd = -1;
+
+        if(animator) {
+            if(!string.IsNullOrEmpty(stats.data.takeHurt))
+                mTakeHurtInd = animator.GetTakeIndex(stats.data.takeHurt);
+
+            animator.takeCompleteCallback += OnAnimatorComplete;
+        }
+    }
 
     // Use this for one-time initialization
     /*protected override void Start() {
@@ -107,6 +123,20 @@ public class EntityDebris : EntityCommon {
 
         //initialize variables from other sources (for communicating with managers, etc.)
     }*/
+
+    protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
+        if(aStats.currentHP > 0f) {
+            if(aStats.currentHP < prev) {
+                if(mTakeHurtInd != -1)
+                    animator.Play(mTakeHurtInd);
+            }
+            //healed?
+
+            return;
+        }
+
+        base.OnStatHPChanged(aStats, prev);
+    }
 
     IEnumerator DoRoam() {
         var wait = new WaitForFixedUpdate();
@@ -134,8 +164,15 @@ public class EntityDebris : EntityCommon {
             }
         }
     }
-    
-    /*protected override void OnStatHPChanged(StatEntityController aStats, float prev) {
-        base.OnStatHPChanged(aStats, prev);
-    }*/
+
+    void OnAnimatorComplete(M8.Animator.AnimatorData anim, M8.Animator.AMTakeData take) {
+        if(take.name == stats.data.takeSpawn) {
+            if(!string.IsNullOrEmpty(stats.data.takeNormal))
+                animator.Play(stats.data.takeNormal);
+        }
+        else if(take.name == stats.data.takeDeath) {
+            if(stats.data.releaseOnDeath)
+                Release();
+        }
+    }
 }

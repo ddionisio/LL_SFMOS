@@ -8,7 +8,19 @@ public class EntityMucusFormInput : MonoBehaviour {
     
     public M8.EntityBase entity;
 
-    public float radius;
+    private EntityMucusForm mEntityMucusForm;
+
+    [SerializeField]
+    public float _radius;
+
+    public float radius {
+        get {
+            if(mEntityMucusForm)
+                return mEntityMucusForm.stats.GetScale(mEntityMucusForm.currentGrowthCount)*_radius;
+
+            return _radius;
+        }
+    }
     
     public bool isLocked {
         get {
@@ -34,6 +46,8 @@ public class EntityMucusFormInput : MonoBehaviour {
     void Awake() {
         entity.spawnCallback += OnEntitySpawn;
         entity.releaseCallback += OnEntityRelease;
+
+        mEntityMucusForm = entity as EntityMucusForm;
     }
     
     void OnEntitySpawn(M8.EntityBase ent) {

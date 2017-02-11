@@ -10,6 +10,7 @@ public class EntitySpawnAt : MonoBehaviour {
     public string poolGroup;
     public string poolSpawnRef;
     public EntityCommon preSpawned; //if you want something from the scene, rather than the pool
+    public bool spawnOnStart = true;
 
     [Header("Launch")]
     public EntityState launchState; //which state to set once Launch is called
@@ -37,8 +38,36 @@ public class EntitySpawnAt : MonoBehaviour {
         }
     }
 
-    public void Cancel() {
+    public void Unfollow() {
+        if(mSpawned) {
+            mSpawned.Follow(null);
+        }
+    }
 
+    public void Spawn() {
+        //shouldn't call this if there's already a spawn, so release the previous
+        if(mSpawned) {
+            if(preSpawned) {
+                preSpawned.transform.position = transform.position;
+                preSpawned.gameObject.SetActive(true);
+            }
+            else
+                mSpawned.Release();
+        }
+
+        var parms = new M8.GenericParams();
+        parms[Params.state] = (int)EntityState.Control;
+        parms[Params.anchor] = transform;
+
+        if(preSpawned) {
+            mSpawned = preSpawned;
+            mSpawned.Spawn(parms); //manually "spawn"
+        }
+        else {
+            mSpawned = M8.PoolController.SpawnFromGroup<EntityCommon>(poolGroup, poolSpawnRef, poolSpawnRef, null, transform.position, parms);
+            if(mSpawned)
+                mSpawned.releaseCallback += OnSpawnedReleased;
+        }
     }
 
     void OnDestroy() {
@@ -50,24 +79,13 @@ public class EntitySpawnAt : MonoBehaviour {
     void Awake() {
         if(preSpawned) {
             preSpawned.releaseCallback += OnSpawnedReleased;
-            mSpawned = preSpawned;
         }
     }
 
     // Use this for initialization
     void Start () {
-        var parms = new M8.GenericParams();
-        parms[Params.state] = (int)EntityState.Control;
-        parms[Params.anchor] = transform;
-
-        if(mSpawned) {
-            mSpawned.Spawn(parms); //manually "spawn"
-        }
-        else {
-            mSpawned = M8.PoolController.SpawnFromGroup<EntityCommon>(poolGroup, poolSpawnRef, poolSpawnRef, null, transform.position, parms);
-            if(mSpawned)
-                mSpawned.releaseCallback += OnSpawnedReleased;
-        }
+        if(spawnOnStart)
+            Spawn();        
     }
 
     void OnSpawnedReleased(M8.EntityBase ent) {

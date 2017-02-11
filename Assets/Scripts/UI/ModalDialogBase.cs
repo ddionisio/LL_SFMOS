@@ -13,6 +13,9 @@ public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
     private bool mIsPaused;
 
     public void Click() {
+        if(M8.UIModal.Manager.instance.isBusy)
+            return;
+
         if(textTypewriter.isTyping) {
             textTypewriter.Skip();
             return;
