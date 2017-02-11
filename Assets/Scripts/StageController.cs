@@ -21,9 +21,13 @@ public class StageController : MonoBehaviour {
 
         WaitEnemyCount,
 
-        Wait
-    }
+        Wait,
 
+        QuestionBonusDuration,
+        QuestionBonusUpgradeMucus,
+        QuestionBonusEnemyWipe,
+    }
+    
     [System.Serializable]
     public class DialogLookup {
         public string id;
@@ -252,11 +256,51 @@ public class StageController : MonoBehaviour {
                 case ActionType.Wait:
                     yield return new WaitForSeconds(act.fVal);
                     break;
+
+                case ActionType.QuestionBonusDuration:
+                case ActionType.QuestionBonusUpgradeMucus:
+                case ActionType.QuestionBonusEnemyWipe:
+                    yield return DoQuestion(act);
+                    break;
             }
 
             if(isError)
                 Debug.LogWarning(string.Format("Error for id = {0}, lookup = {1}", act.id, act.lookup));
         }
+    }
+
+    IEnumerator DoQuestion(Action act) {
+
+        bool isDone = false;
+        bool isAnswerCorrect = false;
+
+        ModalLoLQuestion.ResultCallback callback = delegate (bool isCorrect) {
+            isAnswerCorrect = isCorrect;
+            isDone = true;
+        };
+
+        mParmsDialog[ModalLoLQuestion.parmResultCallback] = callback;
+
+        M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
+
+        while(!isDone)
+            yield return null;
+
+        mParmsDialog[ModalLoLQuestion.parmResultCallback] = null;
+
+        if(isAnswerCorrect)
+            Debug.Log("question answer correct");
+
+        switch(act.type) {
+            case ActionType.QuestionBonusDuration:
+            case ActionType.QuestionBonusUpgradeMucus:
+            case ActionType.QuestionBonusEnemyWipe:
+                break;
+        }
+
+        //fail-safe if we needed more questions
+        if(LoLManager.instance.isQuestionsAllAnswered)
+            LoLManager.instance.ResetCurrentQuestionIndex();
     }
 
     IEnumerator DoPlay(MissionController missionCtrl) {

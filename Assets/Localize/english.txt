@@ -69,6 +69,16 @@
             "key": "mission0_1_pathogenKilled0",
             "text": "Good work, now to take care of the rest.",
             "param": []
+        },
+        {
+            "key": "result_correct",
+            "text": "CORRECT!",
+            "param": []
+        },
+        {
+            "key": "result_incorrect",
+            "text": "INCORRECT!",
+            "param": []
         }
     ]
 }

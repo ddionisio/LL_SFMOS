@@ -6,5 +6,8 @@ public struct SceneStateVars {
     public const string isRetry = "isRetry";
     public const string curStage = "curStage";
     public const string curScore = "curScore";
+    public const string curSessionScore = "curSessionScore";
     public const string debugStartStage = "debugStartStage";
+
+    public const string lessonsProgress = "lessonsProgress";
 }

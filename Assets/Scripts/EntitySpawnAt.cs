@@ -11,6 +11,7 @@ public class EntitySpawnAt : MonoBehaviour {
     public string poolSpawnRef;
     public EntityCommon preSpawned; //if you want something from the scene, rather than the pool
     public bool spawnOnStart = true;
+    public bool forceEnemyRegistry = false; //if true, add spawned entity to enemy registry in mission control regardless of flag (registerAsEnemy)
 
     [Header("Launch")]
     public EntityState launchState; //which state to set once Launch is called

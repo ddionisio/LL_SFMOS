@@ -141,14 +141,13 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
 
     protected virtual IEnumerator Start() {
 
-        int toScore = 0;
+        int toScore = M8.SceneState.instance.global.GetValue(SceneStateVars.curScore);
 
         mIsRetry = M8.SceneState.instance.global.GetValue(SceneStateVars.isRetry) > 0;
         if(mIsRetry) {
             M8.SceneState.instance.global.DeleteValue(SceneStateVars.isRetry, false);
 
-            toScore = M8.SceneState.instance.global.GetValue(SceneStateVars.curScore);
-
+            toScore += M8.SceneState.instance.global.GetValue(SceneStateVars.curSessionScore);
         }
 
         ResetScore(toScore);

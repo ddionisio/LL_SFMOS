@@ -256,7 +256,7 @@ public class Mission0Controller : MissionController {
 
         if(prevStageInd >= 0) {
             //save score state for retry
-            M8.SceneState.instance.global.SetValue(SceneStateVars.curScore, score, false);
+            M8.SceneState.instance.global.SetValue(SceneStateVars.curSessionScore, score, false);
 
             ApplyState(State.StageTransition);
         }
