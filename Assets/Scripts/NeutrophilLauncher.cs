@@ -22,10 +22,18 @@ public class NeutrophilLauncher : MonoBehaviour {
         private bool mIsSpawning;
 
         public void Init() {
+            animator.takeCompleteCallback -= OnAnimationFinish;
+            animator.takeCompleteCallback += OnAnimationFinish;
         }
 
-        public void Reset() {
-            mEntity = null;
+        public void Reset(bool releaseEntity) {
+            if(mEntity) {
+                if(releaseEntity)
+                    mEntity.Release();
+
+                mEntity = null;
+            }
+
             mTarget = null;
 
             mIsSpawning = false;
@@ -33,9 +41,9 @@ public class NeutrophilLauncher : MonoBehaviour {
             if(animator) animator.Stop();
         }
                 
-        public void Spawn(string poolRef,  string entityRef) {
+        public Neutrophil Spawn(string poolRef,  string entityRef) {
             if(mEntity) //shouldn't get here
-                return;
+                return null;
 
             if(animator) {
                 mEntity = M8.PoolController.GetPool(poolRef).Spawn<Neutrophil>(entityRef, entityRef, null, point.position, null);
@@ -45,6 +53,8 @@ public class NeutrophilLauncher : MonoBehaviour {
 
                 animator.Play(takeSpawn);
             }
+
+            return mEntity;
         }
 
         public void Launch(EntityCommon target) {
@@ -87,6 +97,8 @@ public class NeutrophilLauncher : MonoBehaviour {
     public M8.Animator.AnimatorData animator;
     public string takeActivate;
     public string takeDeactivate;
+
+    public int spawnCount { get { return mSpawnCount; } }
     
     private int mSpawnCount; //when it reaches 0, deactivate
 
@@ -97,6 +109,8 @@ public class NeutrophilLauncher : MonoBehaviour {
     
     public void Activate(int addSpawnCount) {
         mSpawnCount += addSpawnCount;
+        if(mSpawnCount <= 0)
+            return;
 
         if(mRout == null) {
             mRout = StartCoroutine(DoSpawns());
@@ -115,13 +129,13 @@ public class NeutrophilLauncher : MonoBehaviour {
         }
 
         mSpawnCount = 0;
+        
+        for(int i = 0; i < spawnPts.Length; i++) {
+            if(spawnPts[i].entity)
+                SpawnHookUpCallback(spawnPts[i].entity, false);
 
-        var pool = M8.PoolController.GetPool(poolRef);
-        if(pool)
-            pool.ReleaseAllByType(entityRef);
-
-        for(int i = 0; i < spawnPts.Length; i++)
-            spawnPts[i].Reset();
+            spawnPts[i].Reset(true);
+        }
 
         mTargetPotentialEntities.Clear();
 
@@ -144,7 +158,7 @@ public class NeutrophilLauncher : MonoBehaviour {
         EntityCommon ent = coll.GetComponent<EntityCommon>();
 
         //make sure it's alive and is't already added
-        if(ent.stats.isAlive && !mTargetPotentialEntities.IsFull && !mTargetPotentialEntities.Exists(ent)) {
+        if(ent.stats.isAlive && ent.stats.data.type == StatEntity.Type.Biological && !mTargetPotentialEntities.IsFull && !mTargetPotentialEntities.Exists(ent)) {
             mTargetPotentialEntities.Add(ent);
 
             if(mLaunchRout == null)
@@ -205,7 +219,9 @@ public class NeutrophilLauncher : MonoBehaviour {
 
             if(spawnPt != null) {
                 //spawn
-                spawnPt.Spawn(poolRef, entityRef);
+                var spawn = spawnPt.Spawn(poolRef, entityRef);
+                if(spawn)
+                    SpawnHookUpCallback(spawn, true);
             }
 
             yield return null;
@@ -270,13 +286,13 @@ public class NeutrophilLauncher : MonoBehaviour {
 
     void OnSpawnRelease(M8.EntityBase ent) {
         mSpawnCount--;
-        if(mSpawnCount < 0) //shouldn't happen
+        if(mSpawnCount < 0)
             mSpawnCount = 0;
 
         //check if this is in the spawns, then reset it
         for(int i = 0; i < spawnPts.Length; i++) {
             if(spawnPts[i].entity == ent) {
-                spawnPts[i].Reset();
+                spawnPts[i].Reset(false);
                 break;
             }
         }

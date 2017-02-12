@@ -58,6 +58,7 @@ public class Mission0Controller : MissionController {
     [Header("Upgrades")]
     public float upgradeTimeBonus = 30f;
     public int upgradeTimeMaxCount = 2;
+    public int upgradeNeutrophilCount = 8;
 
     [Header("Macrophage")]
     public EntityPhagocyte macrophage;
@@ -73,6 +74,9 @@ public class Mission0Controller : MissionController {
 
     [Header("Mast Cell")]
     public EntityMastCell mastCell;
+
+    [Header("Capillary System")]
+    public NeutrophilLauncher neutrophilLauncher;
         
     private bool mIsPointerActive;
 
@@ -290,10 +294,12 @@ public class Mission0Controller : MissionController {
     void ResetUpgrades() {
         int upgradeMucus = upgradeInitialMucusBonus;
         int timeBonusCount = 0;
+        int neutrophilCount = 0;
 
         if(isRetry) {
             upgradeMucus = M8.SceneState.instance.global.GetValue(SceneStateVars.curUpgradeMucus);
             timeBonusCount = M8.SceneState.instance.global.GetValue(SceneStateVars.curTimeBonusCount);
+            neutrophilCount = M8.SceneState.instance.global.GetValue(SceneStateVars.curNeutrophilCount);
         }
 
         mCurUpgradeMucus = upgradeMucus;
@@ -303,12 +309,21 @@ public class Mission0Controller : MissionController {
         for(int i = 0; i < mSpawnerMucusForms.Length; i++) {
             mSpawnerMucusForms[i].SetGrowth(mCurUpgradeMucus);
         }
+
+        if(neutrophilCount > 0)
+            neutrophilLauncher.Activate(neutrophilCount);
     }
 
     //call when going to next stage
     void SaveCurrentUpgrades() {
         M8.SceneState.instance.global.SetValue(SceneStateVars.curUpgradeMucus, mCurUpgradeMucus, false);
         M8.SceneState.instance.global.SetValue(SceneStateVars.curTimeBonusCount, mCurTimeBonusCount, false);
+
+        int neutrophilCount = neutrophilLauncher.spawnCount;
+        if(neutrophilCount < 0)
+            neutrophilCount = 0;
+
+        M8.SceneState.instance.global.SetValue(SceneStateVars.curNeutrophilCount, neutrophilCount, false);
     }
 
     public override bool IsUpgradeFull(UpgradeType upgrade) {
@@ -347,6 +362,10 @@ public class Mission0Controller : MissionController {
                     }
                 }
                 break;
+
+            case UpgradeType.Neutrophil:
+                neutrophilLauncher.Activate(upgradeNeutrophilCount);
+                break;
         }
     }
 
@@ -365,6 +384,9 @@ public class Mission0Controller : MissionController {
         if(prevStageInd >= 0) {
             //save score state for retry
             M8.SceneState.instance.global.SetValue(SceneStateVars.curSessionScore, score, false);
+
+            //save upgrades
+            SaveCurrentUpgrades();
 
             ApplyState(State.StageTransition);
         }

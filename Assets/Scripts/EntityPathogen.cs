@@ -126,6 +126,27 @@ public class EntityPathogen : EntityCommon {
                 if(animator && !string.IsNullOrEmpty(stats.data.takeDeath))
                     animator.Play(stats.data.takeDeath);
                 break;
+
+            case EntityState.DeadInstant:
+                Debug.Log("dead instant: "+name);
+
+                if(body) {
+                    body.simulated = false;
+                    body.velocity = Vector2.zero;
+                    body.angularVelocity = 0f;
+                }
+
+                if(flock)
+                    flock.enabled = false;
+
+                if(mSpawner)
+                    mSpawner.isSpawning = false;
+
+                if(animator && !string.IsNullOrEmpty(stats.data.takeDeathInstant))
+                    animator.Play(stats.data.takeDeathInstant);
+                else
+                    Release();
+                break;
         }
     }
 
@@ -391,6 +412,9 @@ public class EntityPathogen : EntityCommon {
         else if(take.name == stats.data.takeDeath) {
             if(stats.data.releaseOnDeath)
                 Release();
+        }
+        else if(take.name == stats.data.takeDeathInstant) {
+            Release();
         }
     }
 }

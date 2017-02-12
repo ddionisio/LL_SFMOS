@@ -11,6 +11,7 @@ public struct SceneStateVars {
 
     public const string curUpgradeMucus = "curUpgradeMucus";
     public const string curTimeBonusCount = "curTimeBonusCount";
+    public const string curNeutrophilCount = "curNeutrophilCount";
 
     public const string lessonsProgress = "lessonsProgress";
 }
