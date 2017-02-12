@@ -79,6 +79,51 @@
             "key": "result_incorrect",
             "text": "INCORRECT!",
             "param": []
+        },
+        {
+            "key": "title_inflammatory_response",
+            "text": "MAST CELL\nINFLAMMATORY RESPONSE",
+            "param": []
+        },
+        {
+            "key": "bonus_time",
+            "text": "TIME BONUS",
+            "param": []
+        },
+        {
+            "key": "bonus_neutrophil",
+            "text": "NEUTROPHILS",
+            "param": []
+        },
+        {
+            "key": "proceed",
+            "text": "OKAY!",
+            "param": []
+        },
+        {
+            "key": "maxed",
+            "text": "MAXED OUT",
+            "param": []
+        },
+        {
+            "key": "bonus_time_desc",
+            "text": "Description of time bonus",
+            "param": []
+        },
+        {
+            "key": "bonus_neutrophil_desc",
+            "text": "Neutrophil description",
+            "param": []
+        },
+        {
+            "key": "bonus_mucus",
+            "text": "MUCUS POWER",
+            "param": []
+        },
+        {
+            "key": "bonus_mucus_desc",
+            "text": "Mucus description",
+            "param": []
         }
     ]
 }

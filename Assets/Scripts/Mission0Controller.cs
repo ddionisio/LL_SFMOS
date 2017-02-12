@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Mission0Controller : MissionController {
+    public const int upgradeInitialMucusBonus = 1;
+
     public const string modalTimeBonus = "timeBonus";
 
     public enum State {
@@ -49,6 +51,12 @@ public class Mission0Controller : MissionController {
 
     [Header("Health")]
     public EntityCommon[] cellWalls; //when all these die, game over, man
+    
+    private EntitySpawnerMucusForm[] mSpawnerMucusForms;
+
+    [Header("Upgrades")]
+    public float upgradeTimeBonus = 30f;
+    public int upgradeTimeMaxCount = 2;
 
     [Header("Macrophage")]
     public EntityPhagocyte macrophage;
@@ -70,8 +78,15 @@ public class Mission0Controller : MissionController {
     private Coroutine mRout;
 
     private bool mIsStageTimePause;
+    private bool mIsStagePlaying;
+    private bool mIsStageDuration;
     private int mEnemyCheckCount; //if this reaches 0 after all sub stage finishes, go to next stage
     private int mVictimCount;
+
+    private int mCurUpgradeMucus;
+    private int mCurTimeBonusCount;
+
+    private float mCurStageDuration;
 
     private M8.GenericParams mModalTimeResultParams;
 
@@ -130,6 +145,19 @@ public class Mission0Controller : MissionController {
         for(int i = 0; i < stages.Length; i++)
             stages[i].gameObject.SetActive(false);
 
+        //grab mucus form spawner
+        var spawnerMucusForms = new List<EntitySpawnerMucusForm>();
+        for(int i = 0; i < spawnerActivates.Length; i++) {
+            if(spawnerActivates[i]) {
+                var spawnerMucusForm = spawnerActivates[i].GetComponent<EntitySpawnerMucusForm>();
+                if(spawnerMucusForm)
+                    spawnerMucusForms.Add(spawnerMucusForm);
+            }
+        }
+
+        mSpawnerMucusForms = spawnerMucusForms.ToArray();
+        //
+
         mEnemyCheckCount = 0;
         mVictimCount = 0;
 
@@ -170,7 +198,7 @@ public class Mission0Controller : MissionController {
         mCurStageInd = -1;
 
         int toStage = 0;
-
+        
         if(isRetry) {
             toStage = M8.SceneState.instance.global.GetValue(SceneStateVars.curStage);
         }
@@ -178,9 +206,11 @@ public class Mission0Controller : MissionController {
             toStage = M8.SceneState.instance.global.GetValue(SceneStateVars.debugStartStage);
         }
 
+        ResetUpgrades();
+
         EnterStage(toStage);
     }
-
+        
     void SetPointerActive(bool active) {
         if(mIsPointerActive != active) {
             mIsPointerActive = active;
@@ -246,6 +276,66 @@ public class Mission0Controller : MissionController {
         base.Retry();
     }
 
+    void ResetUpgrades() {
+        int upgradeMucus = upgradeInitialMucusBonus;
+        int timeBonusCount = 0;
+
+        if(isRetry) {
+            upgradeMucus = M8.SceneState.instance.global.GetValue(SceneStateVars.curUpgradeMucus);
+            timeBonusCount = M8.SceneState.instance.global.GetValue(SceneStateVars.curTimeBonusCount);
+        }
+
+        mCurUpgradeMucus = upgradeMucus;
+        mCurTimeBonusCount = timeBonusCount;
+
+        //apply mucus
+        for(int i = 0; i < mSpawnerMucusForms.Length; i++) {
+            mSpawnerMucusForms[i].SetGrowth(mCurUpgradeMucus);
+        }
+    }
+
+    //call when going to next stage
+    void SaveCurrentUpgrades() {
+        M8.SceneState.instance.global.SetValue(SceneStateVars.curUpgradeMucus, mCurUpgradeMucus, false);
+        M8.SceneState.instance.global.SetValue(SceneStateVars.curTimeBonusCount, mCurTimeBonusCount, false);
+    }
+
+    public override bool IsUpgradeFull(UpgradeType upgrade) {
+        switch(upgrade) {
+            case UpgradeType.Mucus:
+                return mSpawnerMucusForms.Length > 0 && mSpawnerMucusForms[0].isGrowthFull;
+            case UpgradeType.Time:
+                return mCurTimeBonusCount >= upgradeTimeMaxCount;
+        }
+
+        return false;
+    }
+
+    public override void Upgrade(UpgradeType upgrade) {
+        switch(upgrade) {
+            case UpgradeType.Mucus:
+                if(mSpawnerMucusForms.Length > 0 && mCurUpgradeMucus < mSpawnerMucusForms[0].stats.growthMaxCount) {
+                    mCurUpgradeMucus++;
+
+                    //apply mucus
+                    for(int i = 0; i < mSpawnerMucusForms.Length; i++) {
+                        mSpawnerMucusForms[i].SetGrowth(mCurUpgradeMucus);
+                    }
+                }
+                break;
+
+            case UpgradeType.Time:
+                if(mCurTimeBonusCount < upgradeTimeMaxCount) {
+                    mCurTimeBonusCount++;
+
+                    //apply now
+                    if(mIsStagePlaying && mIsStageDuration)
+                        mCurStageDuration += mCurTimeBonusCount*upgradeTimeBonus;
+                }
+                break;
+        }
+    }
+
     void EnterStage(int stage) {
         var prevStageInd = mCurStageInd;
 
@@ -283,6 +373,8 @@ public class Mission0Controller : MissionController {
                     mEnemyCheckCount = 0;
 
                     mIsStageTimePause = false;
+                    mIsStagePlaying = false;
+                    mIsStageDuration = false;
                     break;
 
                 case State.StageTransition:
@@ -299,8 +391,10 @@ public class Mission0Controller : MissionController {
                 case State.StagePlay:
                     if(mCurStageInd >= 0 && mCurStageInd < stages.Length)
                         stages[mCurStageInd].gameObject.SetActive(true);
-                                        
-                    if(stages[mCurStageInd].duration > 0f) {
+
+                    mIsStageDuration = stages[mCurStageInd].duration > 0f;
+
+                    if(mIsStageDuration) {
                         HUD.instance.SetTimeActive(true);
                         HUD.instance.UpdateTime(stages[mCurStageInd].duration);
                     }
@@ -362,39 +456,45 @@ public class Mission0Controller : MissionController {
         yield return curStage.Enter(this);
 
         //start playing
+        mIsStagePlaying = true;
 
         inputLock = false; //default as unlocked, stage can lock it if needed
 
-        float curDuration = curStage.duration;
+        //some stages do not have duration, ex. begin
+        if(mIsStageDuration)
+            mCurStageDuration = curStage.duration + mCurTimeBonusCount*upgradeTimeBonus;
+        else
+            mCurStageDuration = 0f;
+
         bool isGameover = false;
 
         curStage.Play(this);
 
-        if(curDuration > 0f) {
+        if(mIsStageDuration) {
             mIsStageTimePause = false;
 
             bool isDanger = false;
             
-            float dangerDuration = curDuration*timeDangerScale;
+            float dangerDuration = mCurStageDuration*timeDangerScale;
 
             while(true) {
                 yield return null;
 
                 //don't count when macrophage is eating
                 if(!mIsStageTimePause && !isProcessingVictims) {
-                    curDuration -= Time.deltaTime;
-                    if(curDuration < 0f)
-                        curDuration = 0f;
+                    mCurStageDuration -= Time.deltaTime;
+                    if(mCurStageDuration < 0f)
+                        mCurStageDuration = 0f;
                 }
 
-                HUD.instance.UpdateTime(curDuration);
+                HUD.instance.UpdateTime(mCurStageDuration);
 
                 //win stage if play is over
                 if(!curStage.isPlaying)
                     break;
 
                 //time ran out
-                if(curDuration == 0f) {
+                if(mCurStageDuration == 0f) {
                     curStage.CancelPlay();
 
                     isGameover = true;
@@ -402,7 +502,7 @@ public class Mission0Controller : MissionController {
                 }
 
                 if(!isDanger) {
-                    if(isDanger = curDuration <= dangerDuration) {
+                    if(isDanger = mCurStageDuration <= dangerDuration) {
                         if(dangerGO)
                             dangerGO.SetActive(true);
                     }
@@ -414,6 +514,8 @@ public class Mission0Controller : MissionController {
                 yield return null;
         }
 
+        mIsStagePlaying = false;
+
         if(isGameover) {
             mRout = null;
 
@@ -421,9 +523,9 @@ public class Mission0Controller : MissionController {
         }
         else {
             //display time bonus
-            int scoreBonus = ComputeTimeBonusScore(curDuration);
+            int scoreBonus = ComputeTimeBonusScore(mCurStageDuration);
             if(scoreBonus > 0) {
-                mModalTimeResultParams[ModalTimeBonus.parmTime] = curDuration;
+                mModalTimeResultParams[ModalTimeBonus.parmTime] = mCurStageDuration;
                 mModalTimeResultParams[ModalTimeBonus.parmMult] = timeScoreMultiplier;
 
                 M8.UIModal.Manager.instance.ModalOpen(modalTimeBonus, mModalTimeResultParams);

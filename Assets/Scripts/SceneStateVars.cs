@@ -9,5 +9,8 @@ public struct SceneStateVars {
     public const string curSessionScore = "curSessionScore";
     public const string debugStartStage = "debugStartStage";
 
+    public const string curUpgradeMucus = "curUpgradeMucus";
+    public const string curTimeBonusCount = "curTimeBonusCount";
+
     public const string lessonsProgress = "lessonsProgress";
 }

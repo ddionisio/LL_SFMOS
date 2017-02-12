@@ -121,6 +121,14 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
 
     }
 
+    public virtual bool IsUpgradeFull(UpgradeType upgrade) {
+        return false;
+    }
+
+    public virtual void Upgrade(UpgradeType upgrade) {
+
+    }
+
     /// <summary>
     /// Broadcast Signal from Mission Control to listeners via signalCallback
     /// </summary>

@@ -28,5 +28,8 @@ public enum EntityState {
     Inflamed,
     Infected,
 
-    Alert
+    //mast cell
+    Alert,
+    Active,
+    Sleep
 }

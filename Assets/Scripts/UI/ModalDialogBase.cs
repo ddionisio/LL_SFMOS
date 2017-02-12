@@ -5,12 +5,17 @@ using UnityEngine;
 using M8.UIModal.Interface;
 
 public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
+    public const string parmActionFinish = "cb";
+    public const string parmPauseOverride = "pause";
+
     public TextTypewriter textTypewriter;
     public GameObject readyGO;
 
     public bool pause;
 
     private bool mIsPaused;
+
+    private System.Action mOnFinish;
 
     public void Click() {
         if(M8.UIModal.Manager.instance.isBusy)
@@ -54,7 +59,14 @@ public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
     public virtual void Push(M8.GenericParams parms) {
         readyGO.SetActive(false);
 
-        if(pause) {
+        mOnFinish = parms.GetValue<System.Action>(parmActionFinish);
+
+        bool doPause = pause;
+
+        if(parms.ContainsKey(parmPauseOverride))
+            doPause = parms.GetValue<bool>(parmPauseOverride);
+
+        if(doPause) {
             if(!mIsPaused) {
                 M8.SceneManager.instance.Pause();
                 mIsPaused = true;
@@ -66,6 +78,13 @@ public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
         if(mIsPaused) {
             M8.SceneManager.instance.Resume();
             mIsPaused = false;
+        }
+
+        if(mOnFinish != null) {
+            var call = mOnFinish;
+            mOnFinish = null;
+
+            call();
         }
     }
     

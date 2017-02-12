@@ -259,11 +259,11 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
     void OnGameStateChanged(GameState state) {
         switch(state) {
             case GameState.Paused:
-                if(M8.UIModal.Manager.instance) {
+                /*if(M8.UIModal.Manager.instance) {
                     if(!M8.UIModal.Manager.instance.ModalIsInStack(pauseModal))
                         M8.UIModal.Manager.instance.ModalOpen(pauseModal);
                 }
-                else if(!mPaused) {
+                else*/ if(!mPaused) {
                     mPaused = true;
                     M8.SceneManager.instance.Pause();
                 }

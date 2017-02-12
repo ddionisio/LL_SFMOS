@@ -89,6 +89,10 @@ public class EntitySpawner : MonoBehaviour, IPoolSpawn, IPoolDespawn {
         }
     }
 
+    public CacheList<EntityBase> spawnedEntities {
+        get { return mSpawnedEntities; }
+    }
+
     public int spawnCount {
         get {
             return mSpawnedEntities.Count;

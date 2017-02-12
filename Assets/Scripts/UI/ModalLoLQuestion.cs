@@ -39,6 +39,8 @@ public class ModalLoLQuestion : M8.UIModal.Controller, IPop, IPush {
 
     private Texture mLoadedTexture;
 
+    private bool mPaused;
+
     public void ClickChoice(int index) {
         if(mIsAnswered || !isActive)
             return;
@@ -120,6 +122,11 @@ public class ModalLoLQuestion : M8.UIModal.Controller, IPop, IPush {
         else { //failsafe            
             if(finishGO) finishGO.SetActive(true);
         }
+
+        if(!mPaused) {
+            M8.SceneManager.instance.Pause();
+            mPaused = true;
+        }
     }
 
     void Populate() {
@@ -190,8 +197,30 @@ public class ModalLoLQuestion : M8.UIModal.Controller, IPop, IPush {
             mLoadedTexture = null;
         }
 
-        if(mResultCallback != null)
-            mResultCallback(mIsAnswerCorrect);
+        if(mResultCallback != null) {
+            var cb = mResultCallback;
+            mResultCallback = null;
+
+            cb(mIsAnswerCorrect);
+        }
+
+        if(mPaused) {
+            M8.SceneManager.instance.Resume();
+            mPaused = false;
+        }
+    }
+
+    void OnDestroy() {
+        if(mLoadedTexture) {
+            Destroy(mLoadedTexture);
+            mLoadedTexture = null;
+        }
+
+        if(mPaused) {
+            if(M8.SceneManager.instance)
+                M8.SceneManager.instance.Resume();
+            mPaused = false;
+        }
     }
 
     IEnumerator DoLoadTexture(string url, RawImage toImage) {
