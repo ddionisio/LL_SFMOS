@@ -48,9 +48,10 @@ public class StatEntityMucusForm : ScriptableObject {
     [Header("Attack")]
     public string[] attackTagFilter;
     public LayerMask attackSplitLayerMask; //to determine which objects to split towards
-    
-    public float excessRadius;
+    public float attackSplitScoreMultiplayerInc = 1.5f;
 
+    public float excessRadius;
+    
     public int growthMaxCount { get { return growths.Length; } }
 
     public float GetRadius(int curGrowth) {

@@ -220,7 +220,7 @@ public class EntityPathogen : EntityCommon {
         yield return new WaitForSeconds(stats.data.seekDelay);
 
         //request target from mission control
-        var seekTarget = MissionController.instance.RequestTarget(transform);
+        var seekTarget = MissionController.instance.RequestTarget();
 
         if(!(flock && seekTarget)) {
             Debug.LogWarning("Nothing to seek");

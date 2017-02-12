@@ -31,5 +31,8 @@ public enum EntityState {
     //mast cell
     Alert,
     Active,
-    Sleep
+    Sleep,
+
+    //misc.
+    DeadInstant, //special death to pathogens targetted by neutrophil
 }

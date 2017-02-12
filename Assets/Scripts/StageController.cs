@@ -26,6 +26,8 @@ public class StageController : MonoBehaviour {
         QuestionBonusDuration,
         QuestionBonusUpgradeMucus,
         QuestionBonusEnemyWipe,
+
+        UpgradeReady,
     }
     
     [System.Serializable]
@@ -261,6 +263,10 @@ public class StageController : MonoBehaviour {
                 case ActionType.QuestionBonusUpgradeMucus:
                 case ActionType.QuestionBonusEnemyWipe:
                     yield return DoQuestion(act);
+                    break;
+
+                case ActionType.UpgradeReady:
+                    missionCtrl.UpgradeReady();
                     break;
             }
 

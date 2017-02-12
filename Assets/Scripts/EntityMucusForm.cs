@@ -24,7 +24,7 @@ public class EntityMucusForm : M8.EntityBase {
     private float mGrowScale;
     
     private float mScoreMultiplier = 1f; //multiplier to apply to damaged target
-
+    
     private Coroutine mRout;
     private Coroutine mGrowRout;
 
@@ -429,7 +429,7 @@ public class EntityMucusForm : M8.EntityBase {
 
                             var splitMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(poolData.group, poolData.factoryKey, name+"_split", null, pos, null);
 
-                            splitMucusForm.mScoreMultiplier = mScoreMultiplier + 1.0f;
+                            splitMucusForm.mScoreMultiplier = mScoreMultiplier + stats.attackSplitScoreMultiplayerInc;
                             splitMucusForm.SetGrow(splitGrowth);
                             splitMucusForm.Launch(dir, stats.launchForceMaxDistance, mLaunchBounds);
 
@@ -443,6 +443,7 @@ public class EntityMucusForm : M8.EntityBase {
 
                             var splitMucusForm = M8.PoolController.SpawnFromGroup<EntityMucusForm>(poolData.group, poolData.factoryKey, name+"_split", null, pos, null);
 
+                            splitMucusForm.mScoreMultiplier = mScoreMultiplier + stats.attackSplitScoreMultiplayerInc;
                             splitMucusForm.SetGrow(splitGrowth);
                             splitMucusForm.Launch(dir, stats.launchForceMaxDistance, mLaunchBounds);
                         }

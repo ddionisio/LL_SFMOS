@@ -61,6 +61,7 @@ public class StatEntity : ScriptableObject {
     public string takeNormal;
     public string takeSeek;
     public string takeDeath;
+    public string takeDeathInstant; //insta-death, should release no matter what
     public string takeAttack;
     public string takeHurt;
 

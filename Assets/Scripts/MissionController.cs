@@ -62,6 +62,10 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         get { return 0; }
     }
 
+    public virtual M8.CacheList<EntityCommon> enemyCache {
+        get { return null; }
+    }
+
     public bool isRetry { get { return mIsRetry; } }
 
     public event OnValueAmountAtCallback scoreAtCallback;
@@ -107,10 +111,10 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
 
     }
 
-    public virtual Transform RequestTarget(Transform requestor) {
+    public virtual Transform RequestTarget() {
         return null;
     }
-
+    
     public virtual void Retry() {
         M8.SceneState.instance.global.SetValue(SceneStateVars.isRetry, 1, false);
 
@@ -126,6 +130,13 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     }
 
     public virtual void Upgrade(UpgradeType upgrade) {
+
+    }
+
+    /// <summary>
+    /// Ready to have upgrade (unlock upgrade interface, etc.)
+    /// </summary>
+    public virtual void UpgradeReady() {
 
     }
 

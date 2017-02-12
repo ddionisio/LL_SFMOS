@@ -11,6 +11,8 @@ public class EntitySpawnerMucusForm : MonoBehaviour {
     public float growthScaleAdd = 0.15f;
     public float growthScaleDelay = 0.3f;
 
+    private Coroutine mRout;
+
     public bool isGrowthFull {
         get {
             return growth >= stats.growthMaxCount;
@@ -25,6 +27,13 @@ public class EntitySpawnerMucusForm : MonoBehaviour {
             var spawns = spawner.spawnedEntities;
             for(int i = 0; i < spawns.Count; i++)
                 spawns[i].state = (int)EntityState.Dead;
+        }
+    }
+
+    void OnDisable() {
+        if(mRout != null) {
+            StopCoroutine(mRout);
+            mRout = null;
         }
     }
     

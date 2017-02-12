@@ -124,6 +124,16 @@
             "key": "bonus_mucus_desc",
             "text": "Mucus description",
             "param": []
+        },
+        {
+            "key": "upgrade_quiz",
+            "text": "Take quiz pls",
+            "param": []
+        },
+        {
+            "key": "upgrade_quiz_fail",
+            "text": "No upgrade :(",
+            "param": []
         }
     ]
 }

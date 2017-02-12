@@ -156,8 +156,10 @@ public class EntityCommon : M8.EntityBase {
     }
 
     protected virtual void OnStatHPChanged(StatEntityController aStats, float prev) {
-        if(aStats.currentHP <= 0f)
-            state = (int)EntityState.Dead;
+        if(aStats.currentHP <= 0f) {
+            if(state != (int)EntityState.DeadInstant)
+                state = (int)EntityState.Dead;
+        }
     }
 
     protected virtual void OnStatStaminaChanged(StatEntityController aStats, float prev) {

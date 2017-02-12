@@ -78,7 +78,7 @@ public class EntityMastCell : M8.EntityBase {
                 break;
 
             case EntityState.Sleep:
-                mRout = StartCoroutine(DoPlayAnim(takeSleep, alertDelay, EntityState.Normal));
+                mRout = StartCoroutine(DoPlayAnim(takeSleep, sleepDelay, EntityState.Normal));
                 inputGO.SetActive(false);
                 break;
         }
@@ -190,11 +190,18 @@ public class EntityMastCell : M8.EntityBase {
             yield return null;
 
         parms.Clear();
+
+        //fail-safe if we needed more questions
+        if(LoLManager.instance.isQuestionsAllAnswered)
+            LoLManager.instance.ResetCurrentQuestionIndex();
         //
 
         //upgrade?
         if(isAnsweredCorrectly) {
             MissionController.instance.Upgrade(upgrade);
+
+            mRout = null;
+            state = (int)EntityState.Alert;
         }
         else {
             //wrong :(
@@ -211,10 +218,9 @@ public class EntityMastCell : M8.EntityBase {
 
             parms.Clear();
             //
+
+            mRout = null;
+            state = (int)EntityState.Sleep;
         }
-
-        mRout = null;
-
-        state = (int)EntityState.Sleep;
     }
 }

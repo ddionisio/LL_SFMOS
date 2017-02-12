@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Mission0Controller : MissionController {
+    public const int enemyActiveCacheCapacity = 64;
     public const int upgradeInitialMucusBonus = 1;
 
     public const string modalTimeBonus = "timeBonus";
@@ -69,6 +70,9 @@ public class Mission0Controller : MissionController {
     public float processMoveSpeedMax;
     public float processMoveWaveHeight;
     public float processMoveWaveRate; //Y position wave while moving
+
+    [Header("Mast Cell")]
+    public EntityMastCell mastCell;
         
     private bool mIsPointerActive;
 
@@ -80,8 +84,10 @@ public class Mission0Controller : MissionController {
     private bool mIsStageTimePause;
     private bool mIsStagePlaying;
     private bool mIsStageDuration;
-    private int mEnemyCheckCount; //if this reaches 0 after all sub stage finishes, go to next stage
+    
     private int mVictimCount;
+
+    private M8.CacheList<EntityCommon> mEnemies;
 
     private int mCurUpgradeMucus;
     private int mCurTimeBonusCount;
@@ -105,8 +111,12 @@ public class Mission0Controller : MissionController {
         set { mIsStageTimePause = value; }
     }
 
+    public override M8.CacheList<EntityCommon> enemyCache {
+        get { return mEnemies; }
+    }
+
     public override int enemyCount {
-        get { return mEnemyCheckCount; }
+        get { return mEnemies.Count; }
     }
 
     protected override void OnInstanceDeinit() {
@@ -157,11 +167,12 @@ public class Mission0Controller : MissionController {
 
         mSpawnerMucusForms = spawnerMucusForms.ToArray();
         //
-
-        mEnemyCheckCount = 0;
+                
         mVictimCount = 0;
 
         mCellWallsAlive = new M8.CacheList<EntityCommon>(cellWalls.Length);
+
+        mEnemies = new M8.CacheList<EntityCommon>(enemyActiveCacheCapacity);
 
         mModalTimeResultParams = new M8.GenericParams();
     }
@@ -231,11 +242,11 @@ public class Mission0Controller : MissionController {
     public override void Signal(SignalType signal, object parms) {
         switch(signal) {
             case SignalType.EnemyRegister:
-                mEnemyCheckCount++;
+                mEnemies.Add((EntityCommon)parms);
                 break;
 
             case SignalType.EnemyUnregister:
-                mEnemyCheckCount--;
+                mEnemies.Remove((EntityCommon)parms);
                 break;
         }
     }
@@ -250,7 +261,7 @@ public class Mission0Controller : MissionController {
         }
     }
 
-    public override Transform RequestTarget(Transform requestor) {
+    public override Transform RequestTarget() {
         if(mCellWallsAlive.Count <= 0)
             return null;
 
@@ -258,7 +269,7 @@ public class Mission0Controller : MissionController {
 
         return cell ? cell.transform : null;
     }
-
+    
     public override void ProcessKill(Collider2D victimColl, StatEntityController victimStatCtrl, int score) {
         //default behaviour
         //ScoreAt(victimStatCtrl.transform.position, score);
@@ -329,11 +340,18 @@ public class Mission0Controller : MissionController {
                     mCurTimeBonusCount++;
 
                     //apply now
-                    if(mIsStagePlaying && mIsStageDuration)
+                    if(mIsStagePlaying && mIsStageDuration) {
                         mCurStageDuration += mCurTimeBonusCount*upgradeTimeBonus;
+
+                        HUD.instance.UpdateTime(mCurStageDuration);
+                    }
                 }
                 break;
         }
+    }
+
+    public override void UpgradeReady() {
+        mastCell.Activate();
     }
 
     void EnterStage(int stage) {
@@ -370,7 +388,7 @@ public class Mission0Controller : MissionController {
 
                     if(dangerGO) dangerGO.SetActive(false);
 
-                    mEnemyCheckCount = 0;
+                    mEnemies.Clear();
 
                     mIsStageTimePause = false;
                     mIsStagePlaying = false;
@@ -393,12 +411,7 @@ public class Mission0Controller : MissionController {
                         stages[mCurStageInd].gameObject.SetActive(true);
 
                     mIsStageDuration = stages[mCurStageInd].duration > 0f;
-
-                    if(mIsStageDuration) {
-                        HUD.instance.SetTimeActive(true);
-                        HUD.instance.UpdateTime(stages[mCurStageInd].duration);
-                    }
-
+                                        
                     SendSignal(SignalType.NewStage, mCurStageInd);
 
                     mRout = StartCoroutine(DoStagePlay());
@@ -461,8 +474,12 @@ public class Mission0Controller : MissionController {
         inputLock = false; //default as unlocked, stage can lock it if needed
 
         //some stages do not have duration, ex. begin
-        if(mIsStageDuration)
+        HUD.instance.SetTimeActive(mIsStageDuration);
+        if(mIsStageDuration) {
             mCurStageDuration = curStage.duration + mCurTimeBonusCount*upgradeTimeBonus;
+            
+            HUD.instance.UpdateTime(mCurStageDuration);
+        }
         else
             mCurStageDuration = 0f;
 
