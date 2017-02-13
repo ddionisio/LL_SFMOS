@@ -154,6 +154,36 @@
             "key": "button_results",
             "text": "RESULTS",
             "param": []
+        },
+        {
+            "key": "start_intro0",
+            "text": "Hi, lesson time!",
+            "param": []
+        },
+        {
+            "key": "start_end0",
+            "text": "Bye!",
+            "param": []
+        },
+        {
+            "key": "start_lesson_0_question",
+            "text": "Beef?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_0_result0",
+            "text": "Beef good.",
+            "param": []
+        },
+        {
+            "key": "start_lesson_1_question",
+            "text": "om nom?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_1_result0",
+            "text": "om nom!",
+            "param": []
         }
     ]
 }

@@ -23,6 +23,27 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         }
     }
 
+    [System.Serializable]
+    public class dockInfo {
+        public Transform anchor;
+        public GameObject active;
+
+        public Vector2 position { get { return anchor ? (Vector2)anchor.position : Vector2.zero; } }
+
+        public void Show() {
+            anchor.gameObject.SetActive(true);
+        }
+
+        public void Highlight(bool highlight) {
+            active.SetActive(highlight);
+        }
+
+        public void Hide() {
+            anchor.gameObject.SetActive(false);
+            active.SetActive(false);
+        }
+    }
+
     [Header("Questions")]
     public QuestionData[] questionPrimary;
     public QuestionData[] questionSecondary;
@@ -33,6 +54,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
     [M8.Localize]
     public string dialogStartStringRef;
+    [M8.Localize]
     public string dialogEndStringRef;
 
     [Header("Animation")]
@@ -49,7 +71,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
     public Transform[] deckAnchors;
 
-    public Transform[] dockAnchors; //recommend: 0, 1 = pair answer; 2 = single answer
+    public dockInfo[] dockAnchors; //recommend: 0, 1 = pair answer; 2 = single answer
     public int dockAnchorSingleIndex; //index within dock anchors for single answer
 
     public Bounds dockArea; //world pos.
@@ -68,30 +90,33 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
     private List<LessonCard> mDeckCards;
     private List<LessonCard> mDockedCards;
-    private Queue<Transform> mAvailableAnchors;
+    private Queue<dockInfo> mAvailableAnchors;
 
     private int mCurScore;
     private int mIncorrectCounter;
         
     void OnDestroy() {
-        if(input)
+        if(input) {
             input.pointerUpCallback -= OnInputPointerUp;
+            input.pointerDragCallback -= OnInputPointerDrag;
+        }
     }
 
     void Awake() {
-        gameObject.SetActive(false);
-
         input.pointerUpCallback += OnInputPointerUp;
+        input.pointerDragCallback += OnInputPointerDrag;
 
         mDeckCards = new List<LessonCard>();
         mDockedCards = new List<LessonCard>();
-        mAvailableAnchors = new Queue<Transform>(dockAnchors.Length);
+        mAvailableAnchors = new Queue<dockInfo>(dockAnchors.Length);
 
         for(int i = 0; i < cards.Length; i++)
             cards[i].gameObject.SetActive(false);
 
-        for(int i = 0; i > dockAnchors.Length; i++)
-            dockAnchors[i].gameObject.SetActive(false);
+        for(int i = 0; i < dockAnchors.Length; i++)
+            dockAnchors[i].Hide();
+
+        gameObject.SetActive(false);
     }
 
     void GenerateQuestions() {
@@ -127,8 +152,8 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         mDockedCards.Clear();
 
-        for(int i = 0; i > dockAnchors.Length; i++)
-            dockAnchors[i].gameObject.SetActive(false);
+        for(int i = 0; i < dockAnchors.Length; i++)
+            dockAnchors[i].Hide();
     }
 
     void PopulateDeck() {
@@ -173,9 +198,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         M8.Util.ShuffleList(mDeckCards);
 
         //activate cards
-        for(int i = 0; i < mDeckCards.Count; i++) {
-            mDeckCards[i].transform.position = deckAnchors[i].position;
+        for(int i = 0; i < mDeckCards.Count; i++) {            
             mDeckCards[i].gameObject.SetActive(true);
+            mDeckCards[i].Place(deckAnchors[i].position);
         }
 
         input.Populate(mDeckCards.ToArray());
@@ -188,15 +213,17 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         mAvailableAnchors.Clear();
 
+        //show docks
+                
         if(question.answers.Length > 1) {
             for(int i = 0; i < question.answers.Length; i++) {
-                dockAnchors[i].gameObject.SetActive(true);
+                dockAnchors[i].Show();
 
                 mAvailableAnchors.Enqueue(dockAnchors[i]);
             }
-        }
+        }//special case single answer
         else {
-            dockAnchors[dockAnchorSingleIndex].gameObject.SetActive(true);
+            dockAnchors[dockAnchorSingleIndex].Show();
 
             mAvailableAnchors.Enqueue(dockAnchors[dockAnchorSingleIndex]);
         }
@@ -214,7 +241,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         //start dialog
         parmDlg[ModalDialog.parmStringRefs] = new string[] { dialogStartStringRef };
-        parmDlg[ModalDialog.parmPauseOverride] = true;
+        parmDlg[ModalDialog.parmPauseOverride] = false;
 
         M8.UIModal.Manager.instance.ModalOpen(modalExclusive, parmDlg);
 
@@ -238,8 +265,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
             mIncorrectCounter = 0;
 
             var question = curQuestion;
-
-            ClearDeck();
+                        
             ClearDock();
 
             //deck entry
@@ -273,13 +299,15 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
             M8.UIModal.Manager.instance.ModalCloseUpTo(modalQuestion, true);
 
             //deck exit
+            ClearDeck();
+
             animator.Play(takeDeckExit);
             while(animator.isPlaying)
                 yield return null;
 
             //results dialog
             parmDlg[ModalDialog.parmStringRefs] = new string[] { curQuestion.resultStringRef };
-            parmDlg[ModalDialog.parmPauseOverride] = true;
+            parmDlg[ModalDialog.parmPauseOverride] = false;
 
             M8.UIModal.Manager.instance.ModalOpen(modalExclusive, parmDlg);
 
@@ -295,6 +323,8 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
             yield return null;
         }
 
+        ClearDock();
+
         //save score
         M8.SceneState.instance.global.SetValue(SceneStateVars.curScore, mCurScore, false);
 
@@ -305,7 +335,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         //end dialog
         parmDlg[ModalDialog.parmStringRefs] = new string[] { dialogEndStringRef };
-        parmDlg[ModalDialog.parmPauseOverride] = true;
+        parmDlg[ModalDialog.parmPauseOverride] = false;
 
         M8.UIModal.Manager.instance.ModalOpen(modalExclusive, parmDlg);
 
@@ -316,17 +346,41 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         //
     }
 
+    void OnInputPointerDrag(LessonInputField inp) {
+        bool active = inp.curCard != null && dockArea.Contains(inp.curPos);
+
+        if(mAvailableAnchors.Count > 0) {
+            var anchor = mAvailableAnchors.Peek();
+            anchor.Highlight(active);
+        }
+    }
+
     void OnInputPointerUp(LessonInputField inp) {
         var card = inp.curCard;
+        if(card == null) {
+            if(mAvailableAnchors.Count > 0) { //edge case
+                var toAnchor = mAvailableAnchors.Peek();
+                toAnchor.Highlight(false);
+            }
 
+            return;
+        }
+                
         //check if there's available
         if(mAvailableAnchors.Count > 0) {
+            var toAnchor = mAvailableAnchors.Peek();
+            toAnchor.Highlight(false);
+
+            //check if we are in valid dock area
+            if(!dockArea.Contains(inp.curPos))
+                return;
+
             //check to see if correct
             var question = curQuestion;
             if(question != null && question.ContainsAnswer(card.type)) {
                 //dock card
-                var toAnchor = mAvailableAnchors.Dequeue();
-
+                mAvailableAnchors.Dequeue();
+                                
                 mDeckCards.Remove(card);
                 mDockedCards.Add(card);
 
@@ -349,6 +403,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
                 mCurScore += score;
 
                 HUD.instance.UpdateScore(mCurScore, prevScore);
+
+                //progress
+                Progress.UpdateLessonProgress(mCurQuestionIndex + 1);
             }
             else { //return as incorrect
                 card.ReturnIncorrect();

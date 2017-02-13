@@ -30,8 +30,12 @@ public class LessonCard : MonoBehaviour {
     [SerializeField]
     Bounds _bounds = new Bounds(); //local
 
+    public SpriteRenderer spriteRender;
+
     public float moveSpeed = 8f;
     public float dragMoveDelay = 0.2f;
+
+    public int orderOnDrag = 10;
 
     [Header("Animations")]
     public M8.Animator.AnimatorData animator;
@@ -47,6 +51,8 @@ public class LessonCard : MonoBehaviour {
 
     private Vector2 mCurDragPos;
     private Vector2 mPlacedPos;
+
+    private int mOrderDefault;
     
     public Bounds worldBounds {
         get {
@@ -133,13 +139,21 @@ public class LessonCard : MonoBehaviour {
         }
 
         mIsDocked = false;
+
+        spriteRender.sortingOrder = mOrderDefault;
     }
 
     void OnDisable() {
         Reset();
     }
 
+    void Awake() {
+        mOrderDefault = spriteRender.sortingOrder;
+    }
+
     IEnumerator DoDrag() {
+        spriteRender.sortingOrder = orderOnDrag;
+
         Vector2 vel = Vector2.zero;
 
         while(true) {
@@ -177,6 +191,8 @@ public class LessonCard : MonoBehaviour {
         //dock animation
         if(mIsDocked)
             animator.Play(takeDock);
+
+        spriteRender.sortingOrder = mOrderDefault;
     }
 
     IEnumerator DoIncorrect() {

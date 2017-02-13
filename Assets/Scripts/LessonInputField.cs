@@ -46,7 +46,7 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     private bool mIsLocked;
 
     private LessonCard[] mCards;
-    private int mCurCardIndex; //card held
+    private int mCurCardIndex = -1; //card held
 
     public void Populate(LessonCard[] cards) {
         mCards = cards;
@@ -104,6 +104,9 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
 
     void IDragHandler.OnDrag(PointerEventData eventData) {
         if(mIsLocked)
+            return;
+
+        if(!eventData.pointerCurrentRaycast.isValid || eventData.pointerCurrentRaycast.gameObject != gameObject)
             return;
 
         mCurPos = ComputePosition(eventData.pointerCurrentRaycast.worldPosition);
