@@ -85,6 +85,10 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
         }
     }
 
+    public List<QuestionAnswered> questionAnsweredList {
+        get { return mQuestionsAnsweredList; }
+    }
+
     public int questionAnsweredCount {
         get {
             if(mQuestionsAnsweredList == null)

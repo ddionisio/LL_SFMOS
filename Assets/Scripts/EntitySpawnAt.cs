@@ -22,6 +22,8 @@ public class EntitySpawnAt : MonoBehaviour {
     //call by animator to release the spawn and do its own thing
     public void Launch() {
         if(mSpawned) {
+            if(!mSpawned.stats.isAlive) return;
+
             mSpawned.state = (int)launchState;
 
             if(launchFollowTarget)
@@ -34,6 +36,8 @@ public class EntitySpawnAt : MonoBehaviour {
     /// </summary>
     public void ChangeStateAndFollow(EntityState state, Transform t) {
         if(mSpawned) {
+            if(!mSpawned.stats.isAlive) return;
+
             mSpawned.state = (int)state;
             mSpawned.Follow(t);
         }
@@ -41,6 +45,8 @@ public class EntitySpawnAt : MonoBehaviour {
 
     public void Unfollow() {
         if(mSpawned) {
+            if(!mSpawned.stats.isAlive) return;
+
             mSpawned.Follow(null);
         }
     }
@@ -52,7 +58,7 @@ public class EntitySpawnAt : MonoBehaviour {
                 preSpawned.transform.position = transform.position;
                 preSpawned.gameObject.SetActive(true);
             }
-            else
+            else if(mSpawned.stats.isAlive)
                 mSpawned.Release();
         }
 

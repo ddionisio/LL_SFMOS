@@ -27,8 +27,17 @@ public class ModalDialog : ModalDialogBase {
     public override void Push(M8.GenericParams parms) {
         base.Push(parms);
 
-        mStringRefs = parms.GetValue<string[]>(parmStringRefs);
-        
+        var parmRefs = parms.GetValue<string[]>(parmStringRefs);
+
+        List<string> parsedRefs = new List<string>();
+
+        for(int i = 0; i < parmRefs.Length; i++) {
+            var parsed = Utility.GrabLocalizeGroup(parmRefs[i]);
+            for(int j = 0; j < parsed.Length; j++)
+                parsedRefs.Add(parsed[j]);
+        }
+
+        mStringRefs = parsedRefs.ToArray();
         mCurStringRefInd = 0;
     }
 

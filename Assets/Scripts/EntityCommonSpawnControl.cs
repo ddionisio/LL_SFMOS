@@ -123,7 +123,7 @@ public class EntityCommonSpawnControl : MonoBehaviour {
                 
         //start post launch, no longer need to track it
         for(int i = 0; i < mSpawnedPathogens.Count; i++) {
-            if(mSpawnedPathogens[i]) {
+            if(mSpawnedPathogens[i] && mSpawnedPathogens[i].stats.isAlive) {
                 mSpawnedPathogens[i].state = (int)launchPostState;
 
                 mSpawnedPathogens[i].releaseCallback -= OnSpawnedEntityRelease; //no longer need to listen

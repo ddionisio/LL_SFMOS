@@ -49,8 +49,19 @@ public class ModalDialogImage : ModalDialogBase {
     public override void Push(M8.GenericParams parms) {
         base.Push(parms);
 
-        mRefs = parms.GetValue<PairRef[]>(parmPairRefs);
-        
+        var parmPairs = parms.GetValue<PairRef[]>(parmPairRefs);
+
+        List<PairRef> parsedRefs = new List<PairRef>();
+
+        for(int i = 0; i < parmPairs.Length; i++) {
+            var parsed = Utility.GrabLocalizeGroup(parmPairs[i].stringRef);
+            for(int j = 0; j < parsed.Length; j++) {
+                var newRef = new PairRef() { sprite = parmPairs[i].sprite, stringRef = parsed[j] };
+                parsedRefs.Add(newRef);
+            }
+        }
+
+        mRefs = parsedRefs.ToArray();
         mCurRefInd = 0;
 
         imageDisplay.gameObject.SetActive(false);

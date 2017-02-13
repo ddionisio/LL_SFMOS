@@ -90,9 +90,9 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     }
 
     public void ProcessVictory() {
-        MissionManager.instance.Complete(mCurScore);
+        M8.SceneState.instance.global.SetValue(SceneStateVars.curScore, mCurScore, false);
 
-        MissionManager.instance.Quiz();
+        M8.UIModal.Manager.instance.ModalOpen(ModalVictory.modalRef);
     }
 
     public void ProcessLose() {

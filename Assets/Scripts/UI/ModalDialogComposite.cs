@@ -67,8 +67,21 @@ public class ModalDialogComposite : ModalDialogBase {
         base.Push(parms);
 
         mRefs = parms.GetValue<PairRef[]>(parmPairRefs);
-        
-        mCurRefInd = 0;        
+
+        var parmPairs = parms.GetValue<PairRef[]>(parmPairRefs);
+
+        List<PairRef> parsedRefs = new List<PairRef>();
+
+        for(int i = 0; i < parmPairs.Length; i++) {
+            var parsed = Utility.GrabLocalizeGroup(parmPairs[i].stringRef);
+            for(int j = 0; j < parsed.Length; j++) {
+                var newRef = new PairRef() { compositeName = parmPairs[i].compositeName, stringRef = parsed[j] };
+                parsedRefs.Add(newRef);
+            }
+        }
+
+        mRefs = parsedRefs.ToArray();
+        mCurRefInd = 0;
     }
 
     public override void Pop() {

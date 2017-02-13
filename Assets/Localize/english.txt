@@ -134,6 +134,26 @@
             "key": "upgrade_quiz_fail",
             "text": "No upgrade :(",
             "param": []
+        },
+        {
+            "key": "title_victory",
+            "text": "VICTORY!",
+            "param": []
+        },
+        {
+            "key": "victory_total_score",
+            "text": "TOTAL SCORE\n{0}",
+            "param": []
+        },
+        {
+            "key": "victory_quiz_correct",
+            "text": "QUIZ SCORE\n<size=10>{0} out of {1} answered correctly.</size>",
+            "param": []
+        },
+        {
+            "key": "button_results",
+            "text": "RESULTS",
+            "param": []
         }
     ]
 }
