@@ -5,13 +5,24 @@ using UnityEngine;
 public class LessonCard : MonoBehaviour {
     public enum Type {
         Invalid = -1,
+
+        //Systems
         CirculatorySystem,
         DigestiveSystem,
         ExcretorySystem,
         MuscularSystem,
         NervousSystem,
         RespiratorySystem,
-        ReproductionSystem
+        ReproductionSystem,
+
+        //Sub systems
+        Heart,
+        Intestines,
+        Kidney,
+        Muscles,
+        Brain,
+        Lungs,
+        Ovaries
     }
 
     [SerializeField]

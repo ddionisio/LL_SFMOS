@@ -21,6 +21,6 @@ public class FPSText : MonoBehaviour {
         mLastDeltaTime += (deltaRT - mLastDeltaTime) * 0.1f;
         
         float fps = 1.0f / mLastDeltaTime;
-        label.text = fps.ToString();
+        label.text = fps.ToString("###.##");
     }
 }

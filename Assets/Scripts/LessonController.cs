@@ -8,6 +8,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         [M8.Localize]
         public string questionStringRef;
         public LessonCard.Type[] answers;
+        public LessonCard.Type[] exclude;
         [M8.Localize]
         public string resultStringRef;
 
@@ -137,7 +138,19 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         List<LessonCard> cardPool = new List<LessonCard>(cards);
         mDeckCards = new List<LessonCard>(deckAnchors.Length);
-        
+
+        //remove exclude cards
+        for(int i = 0; i < question.exclude.Length; i++) {
+            var excludeType = question.exclude[i];
+
+            for(int j = 0; j < cardPool.Count; j++) {
+                if(cardPool[j].type == excludeType) {
+                    cardPool.RemoveAt(j);
+                    break;
+                }
+            }
+        }
+
         //first, add answer cards
         for(int i = 0; i < question.answers.Length; i++) {
             var answerType = question.answers[i];
@@ -151,7 +164,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
                 }
             }
         }
-
+                
         //add the rest
         for(int i = mDeckCards.Count, j = 0; i < deckAnchors.Length; i++, j++) {
             mDeckCards.Add(cardPool[j]);
@@ -256,6 +269,8 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
                 yield return null;
 
             input.isLocked = true;
+
+            M8.UIModal.Manager.instance.ModalCloseUpTo(modalQuestion, true);
 
             //deck exit
             animator.Play(takeDeckExit);

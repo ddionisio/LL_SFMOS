@@ -12,13 +12,15 @@ public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
     public GameObject readyGO;
 
     public bool pause;
+    public bool closeOnFinish = true;
 
     private bool mIsPaused;
 
     private System.Action mOnFinish;
+    private bool mIsFinish;
 
     public void Click() {
-        if(M8.UIModal.Manager.instance.isBusy)
+        if(mIsFinish || M8.UIModal.Manager.instance.isBusy)
             return;
 
         if(textTypewriter.isTyping) {
@@ -30,7 +32,10 @@ public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
             return;
         }
 
-        Close();
+        mIsFinish = true;
+
+        if(closeOnFinish)
+            Close();
     }
 
     /// <summary>
@@ -60,6 +65,8 @@ public class ModalDialogBase : M8.UIModal.Controller, IPop, IPush {
         readyGO.SetActive(false);
 
         mOnFinish = parms.GetValue<System.Action>(parmActionFinish);
+
+        mIsFinish = false;
 
         bool doPause = pause;
 
