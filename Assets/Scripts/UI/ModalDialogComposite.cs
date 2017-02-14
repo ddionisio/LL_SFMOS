@@ -12,7 +12,7 @@ public class ModalDialogComposite : ModalDialogBase {
     public struct PairRef {
         [M8.Localize]
         public string stringRef;
-
+        public bool clear;
         public string compositeName;        
     }
 
@@ -46,18 +46,27 @@ public class ModalDialogComposite : ModalDialogBase {
         }
     }
     
-    void ApplyCurrent() {
-        var compName = mRefs[mCurRefInd].compositeName;
-        if(!string.IsNullOrEmpty(compName)) {
-            GameObject go;
-            if(mComposites.TryGetValue(compName, out go) && go) {
-                if(mCurComposite)
-                    mCurComposite.SetActive(false);
+    void ApplyCurrent() {        
+        if(mRefs[mCurRefInd].clear) {
+            if(mCurComposite) {
+                mCurComposite.SetActive(false);
+                mCurComposite = null;
+            }
+        }
+        else {
+            var compName = mRefs[mCurRefInd].compositeName;
 
-                go.SetActive(true);
+            if(!string.IsNullOrEmpty(compName)) {
+                GameObject go;
+                if(mComposites.TryGetValue(compName, out go) && go) {
+                    if(mCurComposite)
+                        mCurComposite.SetActive(false);
 
-                mCurComposite = go;
-            }            
+                    go.SetActive(true);
+
+                    mCurComposite = go;
+                }
+            }
         }
 
         textTypewriter.SetText(M8.Localize.Get(mRefs[mCurRefInd].stringRef));
@@ -75,7 +84,7 @@ public class ModalDialogComposite : ModalDialogBase {
         for(int i = 0; i < parmPairs.Length; i++) {
             var parsed = Utility.GrabLocalizeGroup(parmPairs[i].stringRef);
             for(int j = 0; j < parsed.Length; j++) {
-                var newRef = new PairRef() { compositeName = parmPairs[i].compositeName, stringRef = parsed[j] };
+                var newRef = new PairRef() { compositeName = parmPairs[i].compositeName, clear = parmPairs[i].clear, stringRef = parsed[j] };
                 parsedRefs.Add(newRef);
             }
         }

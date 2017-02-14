@@ -72,7 +72,28 @@ public class TextTypewriter : MonoBehaviour {
             else
                 yield return wait;
 
-            mStringBuff.Append(mString[i]);
+            if(mString[i] == '<') {
+                int endInd = -1;
+                bool foundEnd = false;
+                for(int j = i+1; j < mString.Length; j++) {
+                    if(mString[j] == '>') {
+                        endInd = j;
+                        if(foundEnd)
+                            break;
+                    }
+                    else if(mString[j] == '/')
+                        foundEnd = true;
+                }
+
+                if(endInd != -1 && foundEnd) {
+                    mStringBuff.Append(mString, i, (endInd - i) + 1);
+                    i = endInd;
+                }
+                else
+                    mStringBuff.Append(mString[i]);
+            }
+            else
+                mStringBuff.Append(mString[i]);
 
             text.text = mStringBuff.ToString();
 

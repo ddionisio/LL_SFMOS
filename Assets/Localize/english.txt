@@ -156,8 +156,53 @@
             "param": []
         },
         {
-            "key": "start_intro0",
-            "text": "Hi, lesson time!",
+            "key": "start_intro0_0",
+            "text": "Greetings and salutations!",
+            "param": []
+        },
+		{
+            "key": "start_intro0_1",
+            "text": "I’m here to help you go over your body’s various <color=#ff807b>systems</color>, and their associated <color=#ff807b>subsystems</color> (<color=#ffe08f>organs</color> and <color=#ffe08f>tissues</color>).",
+            "param": []
+        },
+		{
+            "key": "start_intro0_2",
+            "text": "As you may know, your body contains trillions of <color=#ffe08f>cells</color>!",
+            "param": []
+        },
+		{
+            "key": "start_intro0_3",
+            "text": "The <color=#ffe08f>cells</color> form the many <color=#ffe08f>tissues</color> of your body.\n\nThe <color=#ffe08f>organs</color> are made up of <color=#ffe08f>tissues</color>, and <color=#9cd395>work together</color> to perform the functions of your body.",
+            "param": []
+        },
+		{
+            "key": "start_intro1_0",
+            "text": "Here’s an example.",
+            "param": []
+        },
+		{
+            "key": "start_intro2_0",
+            "text": "The <color=#ff807b>circulatory system</color> (also called cardiovascular system) <color=#9cd395>helps circulate</color> <color=#ffe08f>blood and nutrients</color> around your body. Think of it as the super highway in your body.",
+            "param": []
+        },
+		{
+            "key": "start_intro3_0",
+            "text": "The <color=#ffe08f>heart</color> is part of the <color=#ff807b>circulatory subsystem</color>.  It <color=#9cd395>pumps</color> <color=#ffe08f>oxygenated blood</color> to the body and <color=#ffe08f>deoxygenated blood</color> to the <color=#ffe08f>lungs</color>.",
+            "param": []
+        },
+		{
+            "key": "start_intro4_0",
+            "text": "Now let’s play a little card game to match these <color=#ff807b>systems</color> and <color=#ffe08f>organs</color> based on their <color=#9cd395>functions</color>.",
+            "param": []
+        },
+		{
+            "key": "start_intro4_1",
+            "text": "Simply drag the correct card into the slot to answer the question.",
+            "param": []
+        },
+		{
+            "key": "start_multi_questions",
+            "text": "Now for the next questions, I need you to answer with two cards.",
             "param": []
         },
         {
@@ -166,24 +211,164 @@
             "param": []
         },
         {
-            "key": "start_lesson_0_question",
-            "text": "Beef?",
+            "key": "start_lesson_0_system_question",
+            "text": "Which <color=#ff807b>system</color> is responsible for <color=#9cd395>distributing</color> nutrients, <color=#9cd395>filtering</color> out wastes, and <color=#9cd395>transport</color> immunity around the body?",
             "param": []
         },
         {
-            "key": "start_lesson_0_result0",
-            "text": "Beef good.",
+            "key": "start_lesson_0_system_result0",
+            "text": "The <color=#ff807b>circulatory system</color> consists of: <color=#ffe08f>the heart, blood vessels, blood cells</color>.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_0_subsystem_question",
+            "text": "Which of these is part of the <color=#ff807b>circulatory system</color> that <color=#9cd395>pumps</color> <color=#ffe08f>blood cells</color> through the <color=#ffe08f>blood vessels</color>?",
             "param": []
         },
         {
-            "key": "start_lesson_1_question",
-            "text": "om nom?",
+            "key": "start_lesson_0_subsystem_result0",
+            "text": "Your <color=#ffe08f>heart</color> <color=#9cd395>pumps</color> <color=#ffe08f>blood cells</color> through your <color=#ffe08f>blood vessels</color>. <color=#ffe08f>Blood</color> <color=#9cd395>provides</color> <color=#ffe08f>oxygen and nutrients</color>, as well as <color=#9cd395>assists in the removal</color> of <color=#ffe08f>metabolic wastes</color>.",
             "param": []
         },
         {
-            "key": "start_lesson_1_result0",
-            "text": "om nom!",
+            "key": "start_lesson_1_system_question",
+            "text": "Which <color=#ff807b>system</color> is responsible for the <color=#9cd395>digestion</color> and <color=#9cd395>absorption</color> of food?",
             "param": []
-        }
+        },
+        {
+            "key": "start_lesson_1_system_result0",
+            "text": "The <color=#ff807b>digestive system</color> consists of organs working together to <color=#9cd395>convert</color> <color=#ffe08f>food</color> into <color=#ffe08f>energy and basic nutrients</color> to feed the entire body.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_1_subsystem_question",
+            "text": "Which of these is part of the <color=#ff807b>digestive system</color>?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_1_subsystem_result0",
+            "text": "The <color=#ffe08f>intestines</color> consist of two major subdivisions: the small intestine and the large intestine. <color=#ffe08f>Chemicals</color> from other organs travel here to <color=#9cd395>digest</color> food, and <color=#9cd395>extract</color> nutrients.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_2_system_question",
+            "text": "Which <color=#ff807b>system</color> is responsible for the <color=#9cd395>storage</color> and <color=#9cd395>discharge</color> of <color=#ffe08f>wastes</color> from the body?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_2_system_result0",
+            "text": "The <color=#ff807b>excretory system</color> <color=#9cd395>removes</color> <color=#ffe08f>wastes</color>, so as to <color=#9cd395>prevent damage</color> to the body.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_2_subsystem_question",
+            "text": "Which <color=#ffe08f>organ</color> is responsible for the <color=#9cd395>production, storage, and elimination</color> of <color=#ffe08f>urine</color>?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_2_subsystem_result0",
+            "text": "<color=#ffe08f>Blood</color> enters the <color=#ffe08f>kidneys</color> in order to be <color=#9cd395>cleansed</color> of urea and other wastes. These toxic elements eventually travel to the <color=#ffe08f>bladder</color>, ready to be <color=#9cd395>extracted</color>.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_3_system_question",
+            "text": "Which <color=#ff807b>system</color> is responsible for the <color=#ffe08f>voluntary</color> and <color=#ffe08f>involuntary</color> <color=#9cd395>movements</color> in the body?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_3_system_result0",
+            "text": "The <color=#ff807b>muscular system</color> consists of skeletal, smooth and cardiac muscles. It permits <color=#9cd395>movement</color> of the body, <color=#9cd395>maintains posture</color>, and <color=#9cd395>circulates blood</color> throughout the body.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_3_subsystem_question",
+            "text": "Which <color=#ffe08f>organ</color> is responsible for is responsible for the <color=#ffe08f>voluntary</color> and <color=#ffe08f>involuntary</color> <color=#9cd395>movements</color> in the body?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_3_subsystem_result0",
+            "text": "The <color=#ffe08f>muscles</color> allow <color=#9cd395>movement</color> of the body, <color=#9cd395>maintain posture</color>, and <color=#9cd395>circulate blood</color> throughout the body.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_4_system_question",
+            "text": "Which <color=#ff807b>system</color> is responsible for <color=#9cd395>controlling</color> and <color=#9cd395>coordinating</color> the <color=#ff807b>other systems</color> of the body?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_4_system_result0",
+            "text": "The <color=#ff807b>nervous system</color> <color=#9cd395>coordinates</color> the body's actions and <color=#9cd395>transmits signals</color> to and from different parts of the body. These signals are transmitted via <color=#ffe08f>neurons</color>.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_4_subsystem_question",
+            "text": "Which <color=#ffe08f>organ</color> is responsible for <color=#9cd395>controlling</color> and <color=#9cd395>coordinating</color> the <color=#ff807b>other systems</color> of the body?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_4_subsystem_result0",
+            "text": "The <color=#ffe08f>brain</color> is an organ that serves as the center of the <color=#ff807b>nervous system</color>.  This is where all your <color=#9cd395>senses</color> are processed.  There lies all of your thoughts, experiences, and feelings.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_5_system_question",
+            "text": "Which <color=#ff807b>system</color> is involved in the <color=#9cd395>intake</color> and <color=#9cd395>exchange</color> of <color=#ffe08f>oxygen</color> and <color=#ffe08f>carbon dioxide</color> between the body and the environment?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_5_system_result0",
+            "text": "The <color=#ff807b>respiratory system</color> works closely together with the <color=#ff807b>circulatory system</color> with the exchange of <color=#ffe08f>oxygen</color> and <color=#ffe08f>carbon dioxide</color>.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_5_subsystem_question",
+            "text": "Which <color=#ffe08f>organ</color> is involved in the <color=#9cd395>intake</color> and <color=#9cd395>exchange</color> of <color=#ffe08f>oxygen</color> and <color=#ffe08f>carbon dioxide</color> between the body and the environment?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_5_subsystem_result0",
+            "text": "The passage of air into the <color=#ffe08f>lungs</color> to <color=#9cd395>supply</color> the body with <color=#ffe08f>oxygen</color> is known as <color=#9cd395>inhalation</color>, and the passage of air out of the lungs to <color=#9cd395>expel</color> <color=#ffe08f>carbon dioxide</color> is known as <color=#9cd395>exhalation</color>.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_6_system_question",
+            "text": "Which <color=#ff807b>system</color> is responsible for the <color=#9cd395>continual existence</color> of mankind?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_6_system_result0",
+            "text": "The <color=#ff807b>reproductive system</color> is a system of <color=#ffe08f>sex organs</color> in the body which work together for the purpose of <color=#9cd395>sexual reproduction</color>. It takes two to tango.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_6_subsystem_question",
+            "text": "Which <color=#ffe08f>organ</color> provides the means for reproduction?",
+            "param": []
+        },
+        {
+            "key": "start_lesson_6_subsystem_result0",
+            "text": "The <color=#ffe08f>ovary</color> ("egg" in English) is an ovum-producing reproductive organ, often found in pairs in the female body of the <color=#ff807b>reproductive system</color>.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_0_system_interaction_question",
+            "text": "Which of the <color=#ff807b>two systems</color> work closely together in the exchange of <color=#ffe08f>oxygen</color> and <color=#ffe08f>carbon dioxide</color>?",
+            "param": []
+        },
+		{
+            "key": "start_lesson_1_system_interaction_question",
+            "text": "Which of the <color=#ff807b>two systems</color> work together in <color=#9cd395>breaking down</color> the <color=#ffe08f>food</color> we eat into <color=#ffe08f>nutrients</color>, and then <color=#9cd395>deliver</color> the <color=#ffe08f>nutrients</color> to the other <color=#ff807b>body systems</color>?",
+            "param": []
+        },
+		{
+            "key": "start_lesson_2_system_interaction_question",
+            "text": "<color=#ff807b>One system</color> <color=#9cd395>collects</color> <color=#ffe08f>waste products</color>, and <color=#9cd395>turns</color> them into <color=#ffe08f>urine</color>.\n\n<color=#ff807b>Another system</color> lets the body <color=#9cd395>know</color> when to release those <color=#ffe08f>wastes</color>.",
+            "param": []
+        },
+		{
+            "key": "start_lesson_3_system_interaction_question",
+            "text": "<color=#ff807b>One system</color> <color=#9cd395>brings</color> in <color=#ffe08f>oxygen</color> and <color=#9cd395>removes</color> <color=#ffe08f>carbon dioxide</color> that is <color=#9cd395>produced</color> by the <color=#ff807b>other system</color> as it <color=#9cd395>contracts</color> and <color=#9cd395>relaxes</color> when a person performs <color=#ffe08f>physical activities</color>.",
+            "param": []
+        },
     ]
 }

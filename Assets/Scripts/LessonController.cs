@@ -24,6 +24,12 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     }
 
     [System.Serializable]
+    public class QuestionPair {
+        public QuestionData question1;
+        public QuestionData question2;
+    }
+
+    [System.Serializable]
     public class dockInfo {
         public Transform anchor;
         public GameObject active;
@@ -44,13 +50,62 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         }
     }
 
+    [System.Serializable]
+    public class dialogInfo {
+        public enum Type {
+            TextOnly,
+            TextAndImage,
+            TextAndComposite
+        }
+        
+        public Type type;
+        public string modal;
+        public bool pause;
+
+        public string[] stringRefs; //for TextOnly
+        public ModalDialogImage.PairRef[] stringAndImageRefs; //for TextAndImage
+        public ModalDialogComposite.PairRef[] stringAndCompositeRefs; //for TextAndComposite
+
+        public bool isShowing {
+            get {
+                return M8.UIModal.Manager.instance.isBusy || M8.UIModal.Manager.instance.ModalIsInStack(modal);
+            }
+        }
+
+        public void Show(M8.GenericParams parmCache) {
+            parmCache.Clear();
+
+            parmCache[ModalDialogBase.parmPauseOverride] = pause;
+
+            switch(type) {
+                case Type.TextOnly:
+                    parmCache[ModalDialog.parmStringRefs] = stringRefs;
+                    break;
+                case Type.TextAndImage:
+                    parmCache[ModalDialogImage.parmPairRefs] = stringAndImageRefs;
+                    break;
+                case Type.TextAndComposite:
+                    parmCache[ModalDialogComposite.parmPairRefs] = stringAndCompositeRefs;
+                    break;
+            }
+
+            M8.UIModal.Manager.instance.ModalOpen(modal, parmCache);
+        }
+    }
+
     [Header("Questions")]
-    public QuestionData[] questionPrimary;
+    public QuestionPair[] questionPrimary;
     public QuestionData[] questionSecondary;
+    public int questionPrimaryCount = 8;
+    public int questionSecondaryCount = 2;
 
     [Header("Dialogs")]
-    public string modalExclusive; //during intro, result, and end
+    public dialogInfo[] dialogsBegin;
+    public dialogInfo dialogMultiQuestionBegin;
+    public dialogInfo[] dialogsEnd;
+
     public string modalQuestion; //during question
+    public string modalPostQuestion;
 
     [M8.Localize]
     public string dialogStartStringRef;
@@ -86,7 +141,8 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     }
 
     private QuestionData[] mQuestions;
-    private int mCurQuestionIndex;    
+    private int mCurQuestionIndex;
+    private int mQuestionMultiStartIndex;
 
     private List<LessonCard> mDeckCards;
     private List<LessonCard> mDockedCards;
@@ -94,7 +150,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
     private int mCurScore;
     private int mIncorrectCounter;
-        
+            
     void OnDestroy() {
         if(input) {
             input.pointerUpCallback -= OnInputPointerUp;
@@ -120,23 +176,33 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     }
 
     void GenerateQuestions() {
-        //shuffle the two list
-        var newQuestions1 = new List<QuestionData>(questionPrimary.Length);
-        newQuestions1.AddRange(questionPrimary);
-        M8.Util.ShuffleList(newQuestions1);
+        var newQuestions = new List<QuestionData>(questionPrimaryCount + questionSecondaryCount);
 
-        var newQuestions2 = new List<QuestionData>(questionSecondary.Length);
-        newQuestions2.AddRange(questionSecondary);
-        M8.Util.ShuffleList(newQuestions2);
+        //alternate between the primary questions
+        var mixPrimaryQuestionPairs = new List<QuestionPair>(questionPrimary.Length);
+        mixPrimaryQuestionPairs.AddRange(questionPrimary);
+        M8.Util.ShuffleList(mixPrimaryQuestionPairs);
 
-        //combine
-        var newQuestions = new List<QuestionData>(questionPrimary.Length + questionSecondary.Length);
-        newQuestions.AddRange(newQuestions1);
-        newQuestions.AddRange(newQuestions2);
+        for(int i = 0; i < questionPrimaryCount; i++) {
+            QuestionData q = i % 2 == 0 ? mixPrimaryQuestionPairs[i].question1 : mixPrimaryQuestionPairs[i].question2;
 
+            newQuestions.Add(q);
+        }
+
+        mQuestionMultiStartIndex = newQuestions.Count;
+
+        //add the secondary questions
+        var mixSecondaryQuestions = new List<QuestionData>(questionSecondary.Length);
+        mixSecondaryQuestions.AddRange(questionSecondary);
+        M8.Util.ShuffleList(mixSecondaryQuestions);
+
+        for(int i = 0; i < questionSecondaryCount; i++) {
+            newQuestions.Add(mixSecondaryQuestions[i]);
+        }
+        
         mQuestions = newQuestions.ToArray();
 
-        mCurQuestionIndex = 0;
+        mCurQuestionIndex = 0;        
     }
 
     void ClearDeck() {
@@ -240,13 +306,12 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         var parmDlg = new M8.GenericParams();
 
         //start dialog
-        parmDlg[ModalDialog.parmStringRefs] = new string[] { dialogStartStringRef };
-        parmDlg[ModalDialog.parmPauseOverride] = false;
+        for(int i = 0; i < dialogsBegin.Length; i++) {
+            dialogsBegin[i].Show(parmDlg);
 
-        M8.UIModal.Manager.instance.ModalOpen(modalExclusive, parmDlg);
-
-        while(M8.UIModal.Manager.instance.ModalIsInStack(modalExclusive) || M8.UIModal.Manager.instance.isBusy)
-            yield return null;
+            while(dialogsBegin[i].isShowing)
+                yield return null;
+        }
 
         parmDlg.Clear();
         //
@@ -262,6 +327,16 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         //play
         while(mCurQuestionIndex < mQuestions.Length) {
+            //show multi question dialog explanation
+            if(mCurQuestionIndex == mQuestionMultiStartIndex) {
+                dialogMultiQuestionBegin.Show(parmDlg);
+
+                while(dialogMultiQuestionBegin.isShowing)
+                    yield return null;
+
+                parmDlg.Clear();
+            }
+
             mIncorrectCounter = 0;
 
             var question = curQuestion;
@@ -309,9 +384,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
             parmDlg[ModalDialog.parmStringRefs] = new string[] { curQuestion.resultStringRef };
             parmDlg[ModalDialog.parmPauseOverride] = false;
 
-            M8.UIModal.Manager.instance.ModalOpen(modalExclusive, parmDlg);
+            M8.UIModal.Manager.instance.ModalOpen(modalPostQuestion, parmDlg);
 
-            while(M8.UIModal.Manager.instance.ModalIsInStack(modalExclusive) || M8.UIModal.Manager.instance.isBusy)
+            while(M8.UIModal.Manager.instance.isBusy || M8.UIModal.Manager.instance.ModalIsInStack(modalPostQuestion))
                 yield return null;
 
             parmDlg.Clear();
@@ -334,13 +409,12 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         animator.Play(takeEnd);
 
         //end dialog
-        parmDlg[ModalDialog.parmStringRefs] = new string[] { dialogEndStringRef };
-        parmDlg[ModalDialog.parmPauseOverride] = false;
+        for(int i = 0; i < dialogsBegin.Length; i++) {
+            dialogsBegin[i].Show(parmDlg);
 
-        M8.UIModal.Manager.instance.ModalOpen(modalExclusive, parmDlg);
-
-        while(M8.UIModal.Manager.instance.ModalIsInStack(modalExclusive) || M8.UIModal.Manager.instance.isBusy)
-            yield return null;
+            while(dialogsBegin[i].isShowing)
+                yield return null;
+        }
 
         parmDlg.Clear();
         //
@@ -388,17 +462,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
                 //score
                 int prevScore = mCurScore;
-                int score;
-                if(mIncorrectCounter == 0)
-                    score = question.score;
-                else if(mIncorrectCounter == 1)
-                    score = Mathf.RoundToInt(question.score*0.75f);
-                else if(mIncorrectCounter == 2)
-                    score = Mathf.RoundToInt(question.score*0.5f);
-                else if(mIncorrectCounter == 3)
-                    score = Mathf.RoundToInt(question.score*0.25f);
-                else
-                    score = Mathf.RoundToInt(question.score*0.1f);
+                int score = Mathf.RoundToInt(question.score*Mathf.Clamp((1.0f - (mIncorrectCounter/4.0f)), 0.1f, 1.0f));
 
                 mCurScore += score;
 
