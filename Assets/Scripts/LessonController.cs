@@ -62,6 +62,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         public string modal;
         public bool pause;
 
+        [M8.Localize]
         public string[] stringRefs; //for TextOnly
         public ModalDialogImage.PairRef[] stringAndImageRefs; //for TextAndImage
         public ModalDialogComposite.PairRef[] stringAndCompositeRefs; //for TextAndComposite
@@ -381,15 +382,19 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
                 yield return null;
 
             //results dialog
-            parmDlg[ModalDialog.parmStringRefs] = new string[] { curQuestion.resultStringRef };
-            parmDlg[ModalDialog.parmPauseOverride] = false;
+            if(!string.IsNullOrEmpty(curQuestion.resultStringRef)) {
+                parmDlg[ModalDialog.parmStringRefs] = new string[] { curQuestion.resultStringRef };
+                parmDlg[ModalDialog.parmPauseOverride] = false;
 
-            M8.UIModal.Manager.instance.ModalOpen(modalPostQuestion, parmDlg);
+                M8.UIModal.Manager.instance.ModalOpen(modalPostQuestion, parmDlg);
 
-            while(M8.UIModal.Manager.instance.isBusy || M8.UIModal.Manager.instance.ModalIsInStack(modalPostQuestion))
-                yield return null;
+                while(M8.UIModal.Manager.instance.isBusy || M8.UIModal.Manager.instance.ModalIsInStack(modalPostQuestion))
+                    yield return null;
 
-            parmDlg.Clear();
+                parmDlg.Clear();
+            }
+            else
+                yield return new WaitForSeconds(1f);
             //
 
             //next
@@ -409,10 +414,10 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         animator.Play(takeEnd);
 
         //end dialog
-        for(int i = 0; i < dialogsBegin.Length; i++) {
-            dialogsBegin[i].Show(parmDlg);
+        for(int i = 0; i < dialogsEnd.Length; i++) {
+            dialogsEnd[i].Show(parmDlg);
 
-            while(dialogsBegin[i].isShowing)
+            while(dialogsEnd[i].isShowing)
                 yield return null;
         }
 

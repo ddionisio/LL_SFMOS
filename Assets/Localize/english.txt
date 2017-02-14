@@ -202,7 +202,7 @@
         },
 		{
             "key": "start_multi_questions",
-            "text": "Now for the next questions, I need you to answer with two cards.",
+            "text": "Now for the following questions, I need you to answer with two cards.",
             "param": []
         },
         {
@@ -347,7 +347,7 @@
         },
         {
             "key": "start_lesson_6_subsystem_result0",
-            "text": "The <color=#ffe08f>ovary</color> ("egg" in English) is an ovum-producing reproductive organ, often found in pairs in the female body of the <color=#ff807b>reproductive system</color>.",
+            "text": "The <color=#ffe08f>ovary</color> ('egg' in English) is an ovum-producing reproductive organ, often found in pairs in the female body of the <color=#ff807b>reproductive system</color>.",
             "param": []
         },
 		{
@@ -369,6 +369,6 @@
             "key": "start_lesson_3_system_interaction_question",
             "text": "<color=#ff807b>One system</color> <color=#9cd395>brings</color> in <color=#ffe08f>oxygen</color> and <color=#9cd395>removes</color> <color=#ffe08f>carbon dioxide</color> that is <color=#9cd395>produced</color> by the <color=#ff807b>other system</color> as it <color=#9cd395>contracts</color> and <color=#9cd395>relaxes</color> when a person performs <color=#ffe08f>physical activities</color>.",
             "param": []
-        },
+        }
     ]
 }
