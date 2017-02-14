@@ -116,6 +116,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     [Header("Animation")]
     public M8.Animator.AnimatorData animator;
     public string takeStart;
+    public string takePrepare;
+    public string takeQuestionResultEnter;
+    public string takeQuestionResultExit;
     public string takeDeckEnter;
     public string takeDeckExit;
     public string takeEnd;
@@ -317,6 +320,11 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         parmDlg.Clear();
         //
 
+        //prepare animation
+        animator.Play(takePrepare);
+        while(animator.isPlaying)
+            yield return null;
+
         //init play        
         GenerateQuestions();
 
@@ -328,22 +336,10 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         //play
         while(mCurQuestionIndex < mQuestions.Length) {
-            //show multi question dialog explanation
-            if(mCurQuestionIndex == mQuestionMultiStartIndex) {
-                dialogMultiQuestionBegin.Show(parmDlg);
-
-                while(dialogMultiQuestionBegin.isShowing)
-                    yield return null;
-
-                parmDlg.Clear();
-            }
-
             mIncorrectCounter = 0;
 
             var question = curQuestion;
-                        
-            ClearDock();
-
+            
             //deck entry
             animator.Play(takeDeckEnter);
             while(animator.isPlaying)
@@ -381,8 +377,14 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
             while(animator.isPlaying)
                 yield return null;
 
+            bool isResultEnterPlayed = false;
+
             //results dialog
             if(!string.IsNullOrEmpty(curQuestion.resultStringRef)) {
+                //move to an appropriate position
+                animator.Play(takeQuestionResultEnter);
+                isResultEnterPlayed = true;
+
                 parmDlg[ModalDialog.parmStringRefs] = new string[] { curQuestion.resultStringRef };
                 parmDlg[ModalDialog.parmPauseOverride] = false;
 
@@ -397,8 +399,31 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
                 yield return new WaitForSeconds(1f);
             //
 
+            ClearDock();
+
             //next
             mCurQuestionIndex++;
+
+            //show multi question dialog explanation
+            if(mCurQuestionIndex == mQuestionMultiStartIndex) {
+                dialogMultiQuestionBegin.Show(parmDlg);
+
+                while(dialogMultiQuestionBegin.isShowing)
+                    yield return null;
+
+                parmDlg.Clear();
+            }
+
+            //move back
+            if(isResultEnterPlayed) {
+                //in case dialog was ended quickly
+                while(animator.isPlaying)
+                    yield return null;
+
+                animator.Play(takeQuestionResultExit);
+                while(animator.isPlaying)
+                    yield return null;
+            }
 
             yield return null;
         }

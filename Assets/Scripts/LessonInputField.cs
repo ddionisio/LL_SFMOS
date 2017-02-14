@@ -48,9 +48,13 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     private LessonCard[] mCards;
     private int mCurCardIndex = -1; //card held
 
+    private bool mPointerDown;
+
     public void Populate(LessonCard[] cards) {
         mCards = cards;
         mCurCardIndex = -1;
+
+        mPointerDown = false;
     }
 
     public void Cancel() {
@@ -60,6 +64,8 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
 
             mCurCardIndex = -1;
         }
+
+        mPointerDown = false;
     }
 
     public void ClearCurrent() {
@@ -67,8 +73,10 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     }
 
     void IPointerDownHandler.OnPointerDown(PointerEventData eventData) {
-        if(mIsLocked)
+        if(mIsLocked || mPointerDown)
             return;
+
+        mPointerDown = true;
 
         mOrigPos = ComputePosition(eventData.pointerCurrentRaycast.worldPosition);
         mCurPos = mOrigPos;
@@ -89,7 +97,7 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     }
 
     void IPointerUpHandler.OnPointerUp(PointerEventData eventData) {
-        if(mIsLocked)
+        if(mIsLocked || !mPointerDown)
             return;
 
         mCurPos = ComputePosition(eventData.pointerCurrentRaycast.worldPosition);
