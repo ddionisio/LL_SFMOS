@@ -16,6 +16,7 @@ public class EntityPhagocyte : M8.EntityBase {
     public string takeNormal;
     public string takeSeek;
     public string takeEat;
+    public string takeGameover;
 
     public bool isEating {
         get {
@@ -61,11 +62,19 @@ public class EntityPhagocyte : M8.EntityBase {
                 if(animator && !string.IsNullOrEmpty(takeNormal))
                     animator.Play(takeNormal);
                 break;
+
+            case EntityState.Alert: //game over
+                if(animator && !string.IsNullOrEmpty(takeGameover))
+                    animator.Play(takeGameover);
+                break;
         }
     }
 
     protected override void OnDespawned() {
         //reset stuff here
+        if(MissionController.instance)
+            MissionController.instance.signalCallback += OnMissionSignal;
+
         mRout = null;
 
         //release any active arms
@@ -83,6 +92,7 @@ public class EntityPhagocyte : M8.EntityBase {
 
     protected override void OnSpawned(M8.GenericParams parms) {
         //populate data/state for ai, player control, etc.
+        MissionController.instance.signalCallback += OnMissionSignal;
 
         //start ai, player control, etc
         state = (int)EntityState.Normal;
@@ -141,6 +151,12 @@ public class EntityPhagocyte : M8.EntityBase {
                 anim.Play(takeSeek);
             else
                 anim.Play(takeNormal);
+        }
+    }
+
+    void OnMissionSignal(MissionController.SignalType signal, object parm) {
+        if(signal == MissionController.SignalType.Defeat) {
+            state = (int)EntityState.Alert;
         }
     }
 

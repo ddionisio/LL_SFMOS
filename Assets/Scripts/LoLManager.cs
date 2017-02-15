@@ -116,6 +116,24 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
     private List<QuestionAnswered> mQuestionsAnsweredList;
 
     private int mCurQuestionIndex;
+
+    private string mLastSoundBackgroundPath;
+
+    public void PlaySound(string path, bool background, bool loop) {
+        if(background && !string.IsNullOrEmpty(mLastSoundBackgroundPath)) {
+            LOLSDK.Instance.StopSound(mLastSoundBackgroundPath);
+        }
+
+        LOLSDK.Instance.PlaySound(path, background, loop);
+
+        mLastSoundBackgroundPath = path;
+    }
+
+    public void StopCurrentBackgroundSound() {
+        if(!string.IsNullOrEmpty(mLastSoundBackgroundPath)) {
+            LOLSDK.Instance.StopSound(mLastSoundBackgroundPath);
+        }
+    }
     
     public MultipleChoiceQuestion GetQuestion(int index) {
         if(mQuestionsList == null)

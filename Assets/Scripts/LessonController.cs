@@ -125,6 +125,14 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     public string takeEndPrepare;
     public string takeEnd;
     public int takeEndSkipFrame = 73;
+    public bool takeEndWait = false;
+
+    [Header("Music")]
+    public string victoryMusicPath;
+
+    [Header("Sound")]
+    public string soundCorrectPath;
+    public string soundWrongPath;
 
     [Header("Info")]
     public LessonInputField input;
@@ -157,6 +165,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
     private int mCurScore;
     private int mIncorrectCounter;
+    private int mMaxScore;
+
+    private bool mIsAnswerPicked;
             
     void OnDestroy() {
         if(input) {
@@ -183,6 +194,8 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     }
 
     void GenerateQuestions() {
+        mMaxScore = 0;
+
         var newQuestions = new List<QuestionData>(questionPrimaryCount + questionSecondaryCount);
 
         //alternate between the primary questions
@@ -194,6 +207,8 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
             QuestionData q = i % 2 == 0 ? mixPrimaryQuestionPairs[i].question1 : mixPrimaryQuestionPairs[i].question2;
 
             newQuestions.Add(q);
+
+            mMaxScore += q.score;
         }
 
         mQuestionMultiStartIndex = newQuestions.Count;
@@ -205,6 +220,8 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         for(int i = 0; i < questionSecondaryCount; i++) {
             newQuestions.Add(mixSecondaryQuestions[i]);
+
+            mMaxScore += mixSecondaryQuestions[i].score*mixSecondaryQuestions[i].answers.Length;
         }
         
         mQuestions = newQuestions.ToArray();
@@ -366,8 +383,17 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
             input.isLocked = false;
 
             //wait for anchors to be filled
-            while(mAvailableAnchors.Count > 0)
+            while(mAvailableAnchors.Count > 0) {
                 yield return null;
+
+                if(mIsAnswerPicked) {
+                    input.isLocked = true;
+                    yield return null;
+                    yield return null;
+                    mIsAnswerPicked = false;
+                    input.isLocked = false;
+                }
+            }
 
             input.isLocked = true;
 
@@ -432,13 +458,12 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         }
 
         ClearDock();
-
-        //save score
-        M8.SceneState.instance.global.SetValue(SceneStateVars.curScore, mCurScore, false);
-
+                
         //end
         input.isLocked = true;
 
+        StartCoroutine(DoVictoryMusic());
+        
         animator.Play(takeEndPrepare);
         while(animator.isPlaying)
             yield return null;
@@ -456,15 +481,18 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         animator.Play(takeEnd);
 
-        while(animator.isPlaying) {
-            if(Input.anyKeyDown) {
-                animator.GotoFrame(takeEndSkipFrame);
-                break;
+        if(takeEndWait) {
+            while(animator.isPlaying) {
+                if(Input.anyKeyDown) {
+                    animator.GotoFrame(takeEndSkipFrame);
+                    break;
+                }
+                yield return null;
             }
-            yield return null;
         }
-        
-        M8.UIModal.Manager.instance.ModalOpen(modalProceed);
+
+        parmDlg[ModalStartFinish.parmMaxScore] = mMaxScore;
+        M8.UIModal.Manager.instance.ModalOpen(modalProceed, parmDlg);
     }
 
     void OnInputPointerDrag(LessonInputField inp) {
@@ -477,6 +505,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     }
 
     void OnInputPointerUp(LessonInputField inp) {
+        if(mIsAnswerPicked)
+            return;
+
         var card = inp.curCard;
         if(card == null) {
             if(mAvailableAnchors.Count > 0) { //edge case
@@ -515,18 +546,36 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
                 HUD.instance.UpdateScore(mCurScore, prevScore);
 
+                //save score
+                M8.SceneState.instance.global.SetValue(SceneStateVars.curScore, mCurScore, false);
+
                 //progress
                 Progress.UpdateLessonProgress(mCurQuestionIndex + 1);
+
+                LoLManager.instance.PlaySound(soundCorrectPath, false, false);
             }
             else { //return as incorrect
                 card.ReturnIncorrect();
                 mIncorrectCounter++;
+
+                LoLManager.instance.PlaySound(soundWrongPath, false, false);
             }
+
+            mIsAnswerPicked = true;
+            input.isLocked = true;
         }
         else
             card.Return();
 
         inp.ClearCurrent();
+    }
+
+    IEnumerator DoVictoryMusic() {
+        LoLManager.instance.StopCurrentBackgroundSound();
+
+        yield return new WaitForSeconds(1f);
+
+        LoLManager.instance.PlaySound(victoryMusicPath, true, false);
     }
     
     void OnDrawGizmos() {

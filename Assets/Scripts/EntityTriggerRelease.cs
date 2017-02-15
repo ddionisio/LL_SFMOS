@@ -19,6 +19,12 @@ public class EntityTriggerRelease : MonoBehaviour {
                 return;
         }
 
+        if(!coll.attachedRigidbody)
+            return;
+
+        if(coll.attachedRigidbody.isKinematic)
+            return;
+
         var ent = coll.GetComponent<M8.EntityBase>();
         if(ent)
             ent.Release();

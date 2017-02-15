@@ -22,8 +22,8 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
             if(mIsLocked != value) {
                 mIsLocked = value;
                 
-                if(mIsLocked)
-                    Cancel();
+                //if(mIsLocked)
+                    //Cancel();
             }
         }
     }
@@ -39,6 +39,8 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     public event Action<LessonInputField> pointerUpCallback;
     public event Action<LessonInputField> pointerDownCallback;
     public event Action<LessonInputField> pointerDragCallback;
+
+    public string pressDownSoundPath;
 
     private Vector2 mOrigPos;
     private Vector2 mCurPos;
@@ -89,9 +91,11 @@ public class LessonInputField : MonoBehaviour, IPointerDownHandler, IPointerUpHa
 
         mCurCardIndex = cardInd;
         if(mCurCardIndex != -1) {
+            LoLManager.instance.PlaySound(pressDownSoundPath, false, false);
+
             mCards[mCurCardIndex].PointerDown(mCurPos);
         }
-
+                
         if(pointerDownCallback != null)
             pointerDownCallback(this);
     }

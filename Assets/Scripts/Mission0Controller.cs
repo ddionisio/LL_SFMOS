@@ -213,6 +213,9 @@ public class Mission0Controller : MissionController {
         }
         else {
             toStage = M8.SceneState.instance.global.GetValue(SceneStateVars.debugStartStage);
+
+            if(toStage > 1) //activate mucus
+                ActivateSpawners();
         }
 
         ResetUpgrades();
@@ -291,7 +294,7 @@ public class Mission0Controller : MissionController {
         int neutrophilCount = 0;
 
         if(isRetry) {
-            upgradeMucus = M8.SceneState.instance.global.GetValue(SceneStateVars.curUpgradeMucus);
+            upgradeMucus = M8.SceneState.instance.global.GetValue(SceneStateVars.curUpgradeMucus, upgradeInitialMucusBonus);
             timeBonusCount = M8.SceneState.instance.global.GetValue(SceneStateVars.curTimeBonusCount);
             neutrophilCount = M8.SceneState.instance.global.GetValue(SceneStateVars.curNeutrophilCount);
         }
