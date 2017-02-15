@@ -107,6 +107,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
     public string modalQuestion; //during question
     public string modalPostQuestion;
+    public string modalProceed;
 
     [M8.Localize]
     public string dialogStartStringRef;
@@ -121,7 +122,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
     public string takeQuestionResultExit;
     public string takeDeckEnter;
     public string takeDeckExit;
+    public string takeEndPrepare;
     public string takeEnd;
+    public int takeEndSkipFrame = 73;
 
     [Header("Info")]
     public LessonInputField input;
@@ -436,7 +439,9 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
         //end
         input.isLocked = true;
 
-        animator.Play(takeEnd);
+        animator.Play(takeEndPrepare);
+        while(animator.isPlaying)
+            yield return null;
 
         //end dialog
         for(int i = 0; i < dialogsEnd.Length; i++) {
@@ -448,6 +453,18 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         parmDlg.Clear();
         //
+
+        animator.Play(takeEnd);
+
+        while(animator.isPlaying) {
+            if(Input.anyKeyDown) {
+                animator.GotoFrame(takeEndSkipFrame);
+                break;
+            }
+            yield return null;
+        }
+        
+        M8.UIModal.Manager.instance.ModalOpen(modalProceed);
     }
 
     void OnInputPointerDrag(LessonInputField inp) {
@@ -511,7 +528,7 @@ public class LessonController : M8.SingletonBehaviour<LessonController> {
 
         inp.ClearCurrent();
     }
-
+    
     void OnDrawGizmos() {
         Gizmos.color = Color.cyan;
 

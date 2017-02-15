@@ -19,22 +19,7 @@
             "key": "start",
             "text": "START",
             "param": []
-        },
-        {
-            "key": "mission0_0_intro0",
-            "text": "Testing 123, I am a thing",
-            "param": []
-        },
-        {
-            "key": "mission0_0_intro1",
-            "text": "Testing 123, I am a thing also",
-            "param": []
-        },
-        {
-            "key": "mission0_0_macrophage0",
-            "text": "Hi, I'm a macrophage",
-            "param": []
-        },
+        },        
         {
             "key": "result_time",
             "text": "TIME:",
@@ -206,11 +191,6 @@
             "param": []
         },
         {
-            "key": "start_end0",
-            "text": "Bye!",
-            "param": []
-        },
-        {
             "key": "start_lesson_0_system_question",
             "text": "Which <color=#ff807b>system</color> is responsible for <color=#9cd395>distributing</color> nutrients, <color=#9cd395>filtering</color> out wastes, and <color=#9cd395>transport</color> immunity around the body?",
             "param": []
@@ -368,6 +348,106 @@
 		{
             "key": "start_lesson_3_system_interaction_question",
             "text": "<color=#ff807b>One system</color> <color=#9cd395>brings</color> in <color=#ffe08f>oxygen</color> and <color=#9cd395>removes</color> <color=#ffe08f>carbon dioxide</color> that is <color=#9cd395>produced</color> by the <color=#ff807b>other system</color> as it <color=#9cd395>contracts</color> and <color=#9cd395>relaxes</color> when a person performs <color=#ffe08f>physical activities</color>.",
+            "param": []
+        },
+		{
+            "key": "start_end0",
+            "text": "Excellent! You got 'em all!",
+            "param": []
+        },
+		{
+		    "key": "start_end_warning0",
+            "text": "WARNING! HIGH VOLUMES OF PATHOGENS DETECTED!",
+            "param": []
+		},
+		{
+		    "key": "start_end_warning1",
+            "text": "IMMUNITY SYSTEMS ACTIVATED! HIGH COMMANDER REQUIRED!",
+            "param": []
+		},
+		{
+            "key": "start_end_warning_title",
+            "text": "IMMUNITY SYSTEM",
+            "param": []
+        },
+		{
+            "key": "start_end_warning_dialog0",
+            "text": "Pathogens are coming to invade the body.\n\nWill you aid us?",
+            "param": []
+        },
+		{
+            "key": "start_end_warning_answer_proceed",
+            "text": "LET'S GO",
+            "param": []
+        },
+		{
+            "key": "start_end_warning_answer_decline",
+            "text": "NOPE",
+            "param": []
+        },
+		{
+            "key": "start_end_warning_answer_to_results",
+            "text": "GO TO RESULTS",
+            "param": []
+        },
+		{
+            "key": "mission0_0_intro0",
+            "text": "Before we begin, let's say hi to our team!",
+            "param": []
+        },
+        {
+            "key": "mission0_0_macrophage0",
+            "text": "Hey there! I'm a macrophage, a large phagocyte of team leukocyte (white blood cell).",
+            "param": []
+        },
+		{
+            "key": "mission0_0_macrophage1",
+            "text": "Phago means 'eat', and cyte means 'cell'.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_macrophage2",
+            "text": "You can call me Biggie-E, because I have a big appetite for pathogens. Yum!",
+            "param": []
+        },
+		{
+            "key": "mission0_0_macrophage3",
+            "text": "When the going gets tough, I can release chemical signals to cause FEVER in order to help defeat the pathogens.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_epithelials0_0",
+            "text": "Hi! We're epithelial cells, part of the integumentary system (skin). We're the barrier to protect you from invaders such as the pathogens.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_epithelials1_0",
+            "text": "I excrete mucus, a cocktail of chemicals and antibody to immobilize pathogens. Contrary to popular belief, I'm not gross at all.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_epithelials2_0",
+            "text": "And I'm a ciliated epithelial cell. I help move debris and disabled pathogens in or out of the body.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_mast_intro_0",
+            "text": "Hello. I'm a mast cell, one of the leukocytes.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_mast_intro_1",
+            "text": "I'm filled with various chemicals such as histamine. I release these chemicals when I sense danger.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_mast_intro_2",
+            "text": "Chemicals such as histamine causes inflammation. The capilaries will loosen up such that blood cells and proteins can come help.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_mast_intro_3",
+            "text": "I may also be responsible for your allergies. Sorry about that!",
             "param": []
         }
     ]
