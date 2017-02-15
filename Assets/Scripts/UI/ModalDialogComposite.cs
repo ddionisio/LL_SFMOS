@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 using M8.UIModal.Interface;
 
-public class ModalDialogComposite : ModalDialogBase {
+public class ModalDialogComposite : ModalDialogBase, IClose {
     public const string parmPairRefs = "strCompPairs";
 
     [System.Serializable]
@@ -96,6 +96,13 @@ public class ModalDialogComposite : ModalDialogBase {
     public override void Pop() {
         base.Pop();
 
+        if(mCurComposite) {
+            mCurComposite.SetActive(false);
+            mCurComposite = null;
+        }
+    }
+
+    void IClose.Close() {
         if(mCurComposite) {
             mCurComposite.SetActive(false);
             mCurComposite = null;

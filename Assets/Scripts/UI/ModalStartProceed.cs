@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 using M8.UIModal.Interface;
 
-public class ModalStartProceed : M8.UIModal.Controller, IClose, IClosing {
+public class ModalStartProceed : M8.UIModal.Controller, IClose, IClosing, IPush {
     [Header("Animation")]
     public M8.Animator.AnimatorData animator;
 
@@ -18,6 +19,8 @@ public class ModalStartProceed : M8.UIModal.Controller, IClose, IClosing {
 
     public M8.SceneAssetPath playScene;
 
+    public Button nopeButton;
+
     private Coroutine mRout;
     private bool mResultProceedActive;
 
@@ -29,8 +32,10 @@ public class ModalStartProceed : M8.UIModal.Controller, IClose, IClosing {
     public void ClickNope() {
         if(animator.isPlaying || mResultProceedActive)
             return;
-                
-        animator.Play(takeResultProceedShow);        
+
+        nopeButton.interactable = false;
+
+        animator.Play(takeResultProceedShow);
     }
 
     public void ClickProceedResult() {
@@ -41,12 +46,23 @@ public class ModalStartProceed : M8.UIModal.Controller, IClose, IClosing {
         resultScene.Load();
     }
 
+    void OnDestroy() {
+        if(animator)
+            animator.takeCompleteCallback -= OnAnimationComplete;
+    }
+
+    void Awake() {
+        animator.takeCompleteCallback += OnAnimationComplete;
+    }
+
     IEnumerator DoHideResultProceed() {
         yield return new WaitForSeconds(resultProceedHideDelay);
 
         animator.Play(takeResultProceedHide);
 
         mResultProceedActive = false;
+
+        nopeButton.interactable = true;
 
         mRout = null;
     }
@@ -68,6 +84,10 @@ public class ModalStartProceed : M8.UIModal.Controller, IClose, IClosing {
             yield return null;
     }
 
+    void IPush.Push(M8.GenericParams parms) {
+        nopeButton.interactable = true;
+    }
+    
     void OnAnimationComplete(M8.Animator.AnimatorData anim, M8.Animator.AMTakeData take) {
         if(take.name == takeResultProceedShow) {
             mResultProceedActive = true;

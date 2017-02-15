@@ -10,6 +10,11 @@
             "text": "OPTIONS",
             "param": []
         },
+		{
+			"key": "button_giveup",
+            "text": "GIVE UP",
+            "param": []
+		},
         {
             "key": "title_lose",
             "text": "LOSE",
@@ -29,32 +34,7 @@
             "key": "result_score",
             "text": "SCORE:",
             "param": []
-        },
-        {
-            "key": "mission0_0_incoming0",
-            "text": "Here comes trouble!",
-            "param": []
-        },
-        {
-            "key": "mission0_1_explainTime0",
-            "text": "Subdue all the pathogens before time runs out!",
-            "param": []
-        },
-        {
-            "key": "mission0_1_explainPathogen0",
-            "text": "Here's a pathogen, kill the bugger.",
-            "param": []
-        },
-        {
-            "key": "mission0_1_explainPathogen1",
-            "text": "Hit it with a mucus.",
-            "param": []
-        },
-        {
-            "key": "mission0_1_pathogenKilled0",
-            "text": "Good work, now to take care of the rest.",
-            "param": []
-        },
+        },        
         {
             "key": "result_correct",
             "text": "CORRECT!",
@@ -392,47 +372,52 @@
         },
 		{
             "key": "mission0_0_intro0",
+            "text": "Alright, listen up! We're here to protect the body from the perils of the outside world.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_intro1",
             "text": "Before we begin, let's say hi to our team!",
             "param": []
         },
         {
             "key": "mission0_0_macrophage0",
-            "text": "Hey there! I'm a macrophage, a large phagocyte of team leukocyte (white blood cell).",
+            "text": "Hey there! I'm a macrophage, one of the largest phagocyte of the team. You can call me Biggie-E.",
             "param": []
         },
 		{
             "key": "mission0_0_macrophage1",
-            "text": "Phago means 'eat', and cyte means 'cell'.",
+            "text": "I do a lot of things to keep the body safe! For one, I provide intel by presenting the corpses of our enemy. And in order to do that...",
             "param": []
         },
 		{
             "key": "mission0_0_macrophage2",
-            "text": "You can call me Biggie-E, because I have a big appetite for pathogens. Yum!",
+            "text": "I eat them up! Through a process known as phagocytosis. Phago means 'devour', and cytosis means 'cell process'.",
             "param": []
         },
 		{
             "key": "mission0_0_macrophage3",
-            "text": "When the going gets tough, I can release chemical signals to cause FEVER in order to help defeat the pathogens.",
+            "text": "When the going gets tough, I will release chemical signals to cause a FEVER. This ought to slow the bad guys down.",
             "param": []
         },
 		{
             "key": "mission0_0_epithelials0_0",
-            "text": "Hi! We're epithelial cells, part of the integumentary system (skin). We're the barrier to protect you from invaders such as the pathogens.",
+            "text": "Hi! We're epithelial cells, part of the body's integumentary system. We are the barriers of the body that keep the bad guys out.",
             "param": []
         },
 		{
             "key": "mission0_0_epithelials1_0",
-            "text": "I excrete mucus, a cocktail of chemicals and antibody to immobilize pathogens. Contrary to popular belief, I'm not gross at all.",
+            "text": "I'm what is called a goblet cell. I excrete mucus, a cocktail of chemicals that immobilize pathogens. We really aren't that gross.",
             "param": []
         },
 		{
             "key": "mission0_0_epithelials2_0",
-            "text": "And I'm a ciliated epithelial cell. I help move debris and disabled pathogens in or out of the body.",
+            "text": "I'm a ciliated epithelial cell. I use my cilia to trap and move debris in or out of the body.",
             "param": []
         },
 		{
             "key": "mission0_0_mast_intro_0",
-            "text": "Hello. I'm a mast cell, one of the leukocytes.",
+            "text": "Hello! I'm a mast cell!",
             "param": []
         },
 		{
@@ -442,12 +427,37 @@
         },
 		{
             "key": "mission0_0_mast_intro_2",
-            "text": "Chemicals such as histamine causes inflammation. The capilaries will loosen up such that blood cells and proteins can come help.",
+            "text": "Chemicals such as histamine causes inflammation. The capilaries will loosen up so that blood cells and proteins can come help.",
             "param": []
         },
 		{
             "key": "mission0_0_mast_intro_3",
             "text": "I may also be responsible for your allergies. Sorry about that!",
+            "param": []
+        },
+		{
+            "key": "mission0_0_incoming0",
+            "text": "A pathogen! They are microorganisms that can cause disease.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_incoming1",
+            "text": "This here is a virus. There are many more types of pathogen to watch out for: bacteria, fungi, and parasites.",
+            "param": []
+        },
+		{
+            "key": "mission0_0_incoming2",
+            "text": "Destroy them all with impunity!",
+            "param": []
+        },
+        {
+            "key": "mission0_1_explainTime0",
+            "text": "Don't let time run out! The goal is to not let any pathogens remain for the given duration.",
+            "param": []
+        },
+		{
+            "key": "mission0_1_explainTime1",
+            "text": "We're counting on you! Good luck!",
             "param": []
         }
     ]

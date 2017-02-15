@@ -53,9 +53,14 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         }
     }
 
-    public virtual bool isStageTimePause {
-        get { return false; }
-        set {  }
+    public bool isStageTimePause {
+        get { return mTimePaused; }
+        set {
+            if(mTimePaused != value) {
+                mTimePaused = value;
+                SetTimePause(mTimePaused);
+            }
+        }
     }
 
     public virtual int enemyCount {
@@ -74,6 +79,7 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     private int mCurScore;
     private M8.StatsController mStats;
     private bool mInputLock;
+    private bool mTimePaused;
     private bool mIsRetry;
         
     public void ScoreAt(Vector2 worldPos, int scoreAmt) {
@@ -125,6 +131,10 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
 
     }
 
+    protected virtual void SetTimePause(bool aPause) {
+
+    }
+
     public virtual bool IsUpgradeFull(UpgradeType upgrade) {
         return false;
     }
@@ -149,6 +159,8 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
     }
 
     protected override void OnInstanceDeinit() {
+        if(ButtonOptions.instance)
+            ButtonOptions.instance.showGiveUp = false;
     }
 
     protected override void OnInstanceInit() {
@@ -156,6 +168,8 @@ public class MissionController : M8.SingletonBehaviour<MissionController> {
         MissionManager.instance.SetMission(missionIndex);
 
         mStats = GetComponent<M8.StatsController>();
+
+        ButtonOptions.instance.showGiveUp = true;
     }
 
     protected virtual IEnumerator Start() {

@@ -139,8 +139,11 @@ public class MucusGatherInputField : M8.SingletonBehaviour<MucusGatherInputField
 
         if(pointerUpCallback != null)
             pointerUpCallback(this);
-        
-        mCurLaunchInput = null;
+
+        if(mCurLaunchInput) {
+            mRegisteredInputs.Remove(mCurLaunchInput);
+            mCurLaunchInput = null;
+        }
     }
 
     void IDragHandler.OnDrag(PointerEventData eventData) {

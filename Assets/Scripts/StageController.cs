@@ -31,48 +31,26 @@ public class StageController : MonoBehaviour {
     }
     
     [System.Serializable]
-    public class DialogLookup {
+    public class Action {
+        public string name;
+        public ActionType type;
         public string id;
+        public string lookup;
 
         [M8.Localize]
-        public string[] stringRefs;
-    }
+        public string stringRef;
 
-    [System.Serializable]
-    public class DialogImageLookup {
-        public string id;
-        
-        public ModalDialogImage.PairRef[] pairs;
-    }
-
-    [System.Serializable]
-    public class DialogCompositeLookup {
-        public string id;
-
-        public ModalDialogComposite.PairRef[] pairs;
-    }
-
-    [System.Serializable]
-    public class SelectAreaLookup {
-        public string id;
-        public Bounds bounds;
-    }
-
-    [System.Serializable]
-    public class Action {
-        public string lookup;
-        public string id;        
-        public ActionType type;
+        public Sprite sprite;
 
         public float fVal;
+        public int iVal;
     }
+
+    [Header("Modals")]
+    public string modalSelect = "select";
     
     [Header("Look Ups")]
     public M8.Animator.AnimatorData[] animators; //make sure they are in their own game object, their name is used as lookup
-    public DialogLookup[] dialogs;
-    public DialogImageLookup[] dialogImages;
-    public DialogCompositeLookup[] dialogComposites;
-    public SelectAreaLookup[] selects;
     
     [Header("Enter")]
     public Action[] enterActions;
@@ -86,10 +64,6 @@ public class StageController : MonoBehaviour {
     public bool isPlaying { get { return mPlayRout != null; } } //check during Play to see if we are finish
 
     private Dictionary<string, M8.Animator.AnimatorData> mAnimatorLookups;
-    private Dictionary<string, DialogLookup> mDialogLookups;
-    private Dictionary<string, DialogImageLookup> mDialogImageLookups;
-    private Dictionary<string, DialogCompositeLookup> mDialogCompositeLookups;
-    private Dictionary<string, SelectAreaLookup> mSelectAreaLookups;
 
     private M8.GenericParams mParmsDialog;
 
@@ -125,27 +99,7 @@ public class StageController : MonoBehaviour {
             if(animators[i])
                 mAnimatorLookups.Add(animators[i].name, animators[i]);
         }
-
-        mDialogLookups = new Dictionary<string, DialogLookup>();
-        for(int i = 0; i < dialogs.Length; i++) {
-            mDialogLookups.Add(dialogs[i].id, dialogs[i]);
-        }
-
-        mDialogImageLookups = new Dictionary<string, DialogImageLookup>();
-        for(int i = 0; i < dialogImages.Length; i++) {
-            mDialogImageLookups.Add(dialogImages[i].id, dialogImages[i]);
-        }
-
-        mDialogCompositeLookups = new Dictionary<string, DialogCompositeLookup>();
-        for(int i = 0; i < dialogComposites.Length; i++) {
-            mDialogCompositeLookups.Add(dialogComposites[i].id, dialogComposites[i]);
-        }
-
-        mSelectAreaLookups = new Dictionary<string, SelectAreaLookup>();
-        for(int i = 0; i < selects.Length; i++) {
-            mSelectAreaLookups.Add(selects[i].id, selects[i]);
-        }
-
+        
         mParmsDialog = new M8.GenericParams();
     }
 
@@ -156,6 +110,8 @@ public class StageController : MonoBehaviour {
             bool isError = false;
 
             M8.Animator.AnimatorData anim;
+
+            mParmsDialog.Clear();
 
             switch(act.type) {
                 case ActionType.AnimPlay:                    
@@ -177,60 +133,39 @@ public class StageController : MonoBehaviour {
                     break;
 
                 case ActionType.Dialog:
-                    DialogLookup dialog;
-                    if(mDialogLookups.TryGetValue(act.lookup, out dialog)) {
-                        mParmsDialog[ModalDialog.parmStringRefs] = dialog.stringRefs;
+                    mParmsDialog[ModalDialog.parmStringRefs] = new string[] { act.stringRef };
 
-                        M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
+                    M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
 
-                        while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
-                            yield return null;
-                    }
-                    else
-                        isError = true;
+                    while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
+                        yield return null;
                     break;
 
                 case ActionType.DialogImage:
-                    DialogImageLookup dialogImage;
-                    if(mDialogImageLookups.TryGetValue(act.lookup, out dialogImage)) {
-                        mParmsDialog[ModalDialogImage.parmPairRefs] = dialogImage.pairs;
+                    mParmsDialog[ModalDialogImage.parmPairRefs] = new ModalDialogImage.PairRef[] { new ModalDialogImage.PairRef() { stringRef=act.stringRef, sprite=act.sprite } };
 
-                        M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
+                    M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
 
-                        while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
-                            yield return null;
-                    }
-                    else
-                        isError = true;
+                    while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
+                        yield return null;
                     break;
 
                 case ActionType.DialogComposite:
-                    DialogCompositeLookup dialogComp;
-                    if(mDialogCompositeLookups.TryGetValue(act.lookup, out dialogComp)) {
-                        mParmsDialog[ModalDialogComposite.parmPairRefs] = dialogComp.pairs;
+                    mParmsDialog[ModalDialogComposite.parmPairRefs] = new ModalDialogComposite.PairRef[] { new ModalDialogComposite.PairRef() { stringRef=act.stringRef, compositeName=act.lookup } };
 
-                        M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
+                    M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
 
-                        while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
-                            yield return null;
-                    }
-                    else
-                        isError = true;
+                    while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
+                        yield return null;
                     break;
 
                 case ActionType.SelectArea:
-                    SelectAreaLookup selectArea;
-                    if(mSelectAreaLookups.TryGetValue(act.lookup, out selectArea)) {
-                        mParmsDialog[ModalWorldSelect.parmCamRefs] = Camera.main;
-                        mParmsDialog[ModalWorldSelect.parmBoundsRefs] = selectArea.bounds;
+                    mParmsDialog[ModalSelect.parmIndex] = act.iVal;
 
-                        M8.UIModal.Manager.instance.ModalOpen(act.id, mParmsDialog);
+                    M8.UIModal.Manager.instance.ModalOpen(modalSelect, mParmsDialog);
 
-                        while(M8.UIModal.Manager.instance.ModalIsInStack(act.id) || M8.UIModal.Manager.instance.isBusy)
-                            yield return null;
-                    }
-                    else
-                        isError = true;
+                    while(M8.UIModal.Manager.instance.ModalIsInStack(modalSelect) || M8.UIModal.Manager.instance.isBusy)
+                        yield return null;
                     break;
 
                 case ActionType.InputLock:
@@ -314,16 +249,5 @@ public class StageController : MonoBehaviour {
         yield return DoActions(missionCtrl, playActions);
 
         mPlayRout = null;
-    }
-        
-    void OnDrawGizmos() {
-        if(selects == null)
-            return;
-
-        Gizmos.color = new Color(0.9568f, 0.52549f, 0.1058f);
-        for(int i = 0; i < selects.Length; i++) {
-            var bound = selects[i].bounds;
-            Gizmos.DrawWireCube(bound.center, bound.size);
-        }
     }
 }

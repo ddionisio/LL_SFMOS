@@ -84,8 +84,7 @@ public class Mission0Controller : MissionController {
 
     private State mCurState = State.None;
     private Coroutine mRout;
-
-    private bool mIsStageTimePause;
+    
     private bool mIsStagePlaying;
     private bool mIsStageDuration;
     
@@ -108,11 +107,6 @@ public class Mission0Controller : MissionController {
         get {
             return mVictimCount > 0 || macrophage.isEating;
         }
-    }
-        
-    public override bool isStageTimePause {
-        get { return mIsStageTimePause; }
-        set { mIsStageTimePause = value; }
     }
 
     public override M8.CacheList<EntityCommon> enemyCache {
@@ -283,7 +277,7 @@ public class Mission0Controller : MissionController {
     protected override void SetInputLock(bool aLock) {
         mucusGatherInput.isLocked = aLock;
     }
-
+    
     public override void Retry() {
         if(mCurStageInd >= 0)
             M8.SceneState.instance.global.SetValue(SceneStateVars.curStage, mCurStageInd, false);
@@ -411,10 +405,11 @@ public class Mission0Controller : MissionController {
                     if(dangerGO) dangerGO.SetActive(false);
 
                     mEnemies.Clear();
-
-                    mIsStageTimePause = false;
+                                        
                     mIsStagePlaying = false;
                     mIsStageDuration = false;
+
+                    isStageTimePause = false;
                     break;
 
                 case State.StageTransition:
@@ -495,6 +490,8 @@ public class Mission0Controller : MissionController {
 
         inputLock = false; //default as unlocked, stage can lock it if needed
 
+        isStageTimePause = false;
+
         //some stages do not have duration, ex. begin
         HUD.instance.SetTimeActive(mIsStageDuration);
         if(mIsStageDuration) {
@@ -506,12 +503,10 @@ public class Mission0Controller : MissionController {
             mCurStageDuration = 0f;
 
         bool isGameover = false;
-
+                
         curStage.Play(this);
 
         if(mIsStageDuration) {
-            mIsStageTimePause = false;
-
             bool isDanger = false;
             
             float dangerDuration = mCurStageDuration*timeDangerScale;
@@ -520,7 +515,7 @@ public class Mission0Controller : MissionController {
                 yield return null;
 
                 //don't count when macrophage is eating
-                if(!mIsStageTimePause && !isProcessingVictims) {
+                if(!isStageTimePause && !isProcessingVictims) {
                     mCurStageDuration -= Time.deltaTime;
                     if(mCurStageDuration < 0f)
                         mCurStageDuration = 0f;
