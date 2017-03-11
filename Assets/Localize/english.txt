@@ -252,7 +252,7 @@
         },
         {
             "key": "start_lesson_3_subsystem_question",
-            "text": "Which <color=#ffe08f>organ</color> is responsible for is responsible for the <color=#ffe08f>voluntary</color> and <color=#ffe08f>involuntary</color> <color=#9cd395>movements</color> in the body?",
+            "text": "Which <color=#ffe08f>organ</color> is responsible for the <color=#ffe08f>voluntary</color> and <color=#ffe08f>involuntary</color> <color=#9cd395>movements</color> in the body?",
             "param": []
         },
         {

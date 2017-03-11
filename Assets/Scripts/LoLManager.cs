@@ -126,12 +126,14 @@ public class LoLManager : M8.SingletonBehaviour<LoLManager> {
 
         LOLSDK.Instance.PlaySound(path, background, loop);
 
-        mLastSoundBackgroundPath = path;
+        if(background)
+            mLastSoundBackgroundPath = path;
     }
 
     public void StopCurrentBackgroundSound() {
         if(!string.IsNullOrEmpty(mLastSoundBackgroundPath)) {
             LOLSDK.Instance.StopSound(mLastSoundBackgroundPath);
+            mLastSoundBackgroundPath = null;
         }
     }
     
