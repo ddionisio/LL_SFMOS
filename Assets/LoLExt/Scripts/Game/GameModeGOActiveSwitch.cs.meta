@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 99765360a505672448a97ec566d392aa
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - signalGameStateChanged: {fileID: 11400000, guid: 4f9dce914f15a6c4b8c0af0d08028ac5,
+      type: 2}
+  executionOrder: -4100
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
