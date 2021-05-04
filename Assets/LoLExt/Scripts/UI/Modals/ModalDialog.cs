@@ -20,13 +20,14 @@ namespace LoLExt {
         public TMP_Text nameLabel;
 
         public TMP_Text textLabel;
-        public float textCharPerSecond = 0.05f;
+        public float textCharPerSecond = 0.04f;
 
         public GameObject textProcessActiveGO;
         public GameObject textProcessFinishGO;
 
         [Header("Data")]
-        public float nextDelay = 1f; //when we are allowed to process next since active
+        public float nextDelay = 0.5f; //when we are allowed to process next since active
+        public bool isRealtime;
         public bool isCloseOnNext;
         public bool isTextSpeechAuto = true;
 
@@ -123,7 +124,8 @@ namespace LoLExt {
 
         public void SkipTextProcess() {
             if(mTextProcessRout != null) { //finish up text process, need to click next one more time
-                if(Time.time - mLastActiveTime < nextDelay)
+                var curTime = isRealtime ? Time.realtimeSinceStartup - mLastActiveTime : Time.time - mLastActiveTime;
+                if(curTime < nextDelay)
                     return;
 
                 StopTextProcess();
@@ -176,7 +178,7 @@ namespace LoLExt {
             if(mIsActive) {
                 mIsNextProcessed = false;
 
-                mLastActiveTime = Time.time;
+                mLastActiveTime = isRealtime ? Time.realtimeSinceStartup : Time.time;
 
                 //play text speech if auto
                 if(isTextSpeechAuto)
@@ -263,16 +265,49 @@ namespace LoLExt {
             if(textProcessActiveGO) textProcessActiveGO.SetActive(true);
             if(textProcessFinishGO) textProcessFinishGO.SetActive(false);
 
+            WaitForSeconds wait = null;
+            WaitForSecondsRealtime waitRT = null;
+
+            if(isRealtime)
+                waitRT = new WaitForSecondsRealtime(textCharPerSecond);
+            else
+                wait = new WaitForSeconds(textCharPerSecond);
+
+            textLabel.text = "";
+
             mTextProcessSB.Clear();
 
-            var waitDelay = new WaitForSeconds(textCharPerSecond);
+            int count = mTextDialog.Length;
+            for(int i = 0; i < count; i++) {
+                if(isRealtime)
+                    yield return waitRT;
+                else
+                    yield return wait;
 
-            for(int i = 0; i < mTextDialog.Length; i++) {
-                mTextProcessSB.Append(mTextDialog[i]);
+                if(mTextDialog[i] == '<') {
+                    int endInd = -1;
+                    bool foundEnd = false;
+                    for(int j = i + 1; j < mTextDialog.Length; j++) {
+                        if(mTextDialog[j] == '>') {
+                            endInd = j;
+                            if(foundEnd)
+                                break;
+                        }
+                        else if(mTextDialog[j] == '/')
+                            foundEnd = true;
+                    }
+
+                    if(endInd != -1 && foundEnd) {
+                        mTextProcessSB.Append(mTextDialog, i, (endInd - i) + 1);
+                        i = endInd;
+                    }
+                    else
+                        mTextProcessSB.Append(mTextDialog[i]);
+                }
+                else
+                    mTextProcessSB.Append(mTextDialog[i]);
 
                 textLabel.text = mTextProcessSB.ToString();
-
-                yield return waitDelay;
             }
 
             mTextProcessRout = null;
