@@ -25,6 +25,15 @@ namespace Renegadeware.LL_SFMOS {
             public CardSetType cardSet;
 
             public CardData[] answers;
+
+            public bool IsAnswerMatch(CardData card) {
+                for(int i = 0; i < answers.Length; i++) {
+                    if(answers[i] == card)
+                        return true;
+                }
+
+                return false;
+            }
         }
 
         [Header("Modals")]
@@ -47,10 +56,31 @@ namespace Renegadeware.LL_SFMOS {
 
         public bool isGameStarted { get; private set; } //true: we got through start normally, false: debug
 
-        private int mRandomSeed;
+        public int maxScore { get { return (scoreSingle * singleQuestionCount) + (scoreSingle * doubleQuestionCount * 4); } } //double score per answer
 
         private Question[] mQuestionShuffle;
         private M8.CacheList<CardData> mCardDeck;
+
+        public int GetScore(int errorCount, bool isDouble) {
+            int score = scoreSingle;
+            if(isDouble)
+                score *= 2;
+
+            int errorPenalty = scoreSinglePenalty;
+            if(isDouble)
+                errorPenalty *= 2;
+
+            score -= errorPenalty * errorCount;
+
+            int minScore = scoreSingleMin;
+            if(isDouble)
+                minScore *= 2;
+
+            if(score < minScore)
+                score = minScore;
+
+            return score;
+        }
 
         /// <summary>
         /// Called in start scene
@@ -71,33 +101,39 @@ namespace Renegadeware.LL_SFMOS {
                 ApplySavedSeed();
 
             //generate shuffled questions
-        }
+            var questionList = new List<Question>(singleQuestionCount + doubleQuestionCount);
 
-        /// <summary>
-        /// Update progress, go to next level-scene
-        /// </summary>
-        public void Progress() {
-            int curProgress;
+            var singleQuestionShuffle = new Question[singleQuestions.Length];
+            System.Array.Copy(singleQuestions, singleQuestionShuffle, singleQuestionShuffle.Length);
+            M8.ArrayUtil.Shuffle(singleQuestionShuffle);
 
-            if (isGameStarted) {
-                if (LoLManager.isInstantiated)
-                    curProgress = LoLManager.instance.curProgress;
-                else
-                    curProgress = 0;
-            }
-            else {
-                //determine our progress based on current scene
-                curProgress = 0;
-            }
+            int singleQuestionShuffleCount = Mathf.Min(singleQuestionShuffle.Length, singleQuestionCount);
+            for(int i = 0; i < singleQuestionShuffleCount; i++)
+                questionList.Add(singleQuestionShuffle[i]);
 
-            if (LoLManager.isInstantiated)
-                LoLManager.instance.ApplyProgress(curProgress + 1);
+            var doubleQuestionShuffle = new Question[doubleQuestions.Length];
+            System.Array.Copy(doubleQuestions, doubleQuestionShuffle, doubleQuestionShuffle.Length);
+            M8.ArrayUtil.Shuffle(doubleQuestionShuffle);
+
+            int doubleQuestionShuffleCount = Mathf.Min(doubleQuestionShuffle.Length, doubleQuestionCount);
+            for(int i = 0; i < doubleQuestionShuffleCount; i++)
+                questionList.Add(doubleQuestionShuffle[i]);
+
+            mQuestionShuffle = questionList.ToArray();
         }
 
         /// <summary>
         /// Grab question based on current progress
         /// </summary>
         public Question GetCurrentQuestion() {
+            if(mQuestionShuffle == null || mQuestionShuffle.Length == 0) {
+                Debug.LogWarning("Questions array is null or empty.");
+            }
+            else if(LoLManager.isInstantiated) {
+                int index = Mathf.Clamp(LoLManager.instance.curProgress, 0, mQuestionShuffle.Length - 1);
+                return mQuestionShuffle[index];
+            }
+
             return null;
         }
 
@@ -136,6 +172,9 @@ namespace Renegadeware.LL_SFMOS {
 
         protected override void OnInstanceInit() {
             isGameStarted = false;
+
+            if(LoLManager.isInstantiated)
+                LoLManager.instance.progressMax = singleQuestionCount + doubleQuestionCount;
         }
 
         private void GenerateRandomSeed() {

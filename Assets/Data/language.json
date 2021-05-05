@@ -80,6 +80,7 @@
     "start_end1": "Three cheers for victory!",
     "start_end_score": "YOU SCORED {0} OUT OF {1}",
     "end_thanks": "Thank you for playing!",
-    "victory": "VICTORY"
+    "victory": "VICTORY",
+    "score": "SCORE:"
   }
 }
