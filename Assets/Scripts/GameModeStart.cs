@@ -44,6 +44,8 @@ namespace Renegadeware.LL_SFMOS {
         [M8.MusicPlaylist]
         public string music;
 
+        private M8.GenericParams mModalParms = new M8.GenericParams();
+
         protected override void OnInstanceInit() {
             base.OnInstanceInit();
 
@@ -99,8 +101,11 @@ namespace Renegadeware.LL_SFMOS {
 
             if (readyGO) readyGO.SetActive(false);
 
+            var lolMgr = LoLManager.instance;
+            var gameDat = GameData.instance;
+
             //start new
-            if (LoLManager.instance.curProgress <= 0 || isRestart) {
+            if (lolMgr.curProgress <= 0 || isRestart) {
                 if (introAnimator && !string.IsNullOrEmpty(introTakePlay))
                     yield return introAnimator.PlayWait(introTakePlay);
 
@@ -108,6 +113,33 @@ namespace Renegadeware.LL_SFMOS {
             }
             else //continue
                 GameData.instance.Begin(false);
+
+            //single questions
+            if(lolMgr.curProgress < gameDat.singleQuestionCount) {
+                mModalParms[ModalQuestion.parmCount] = gameDat.singleQuestionCount;
+
+                M8.ModalManager.main.Open(gameDat.modalQuestion, mModalParms);
+
+                //wait for questions to be done
+                while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion))
+                    yield return null;
+            }
+
+            //double questions intro
+            if(lolMgr.curProgress == gameDat.singleQuestionCount) {
+                
+            }
+
+            //double questions
+            mModalParms[ModalQuestion.parmCount] = gameDat.doubleQuestionCount;
+
+            M8.ModalManager.main.Open(gameDat.modalQuestion, mModalParms);
+
+            //wait for questions to be done
+            while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion))
+                yield return null;
+
+            //end
         }
     }
 }

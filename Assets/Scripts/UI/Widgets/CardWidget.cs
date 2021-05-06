@@ -50,7 +50,7 @@ namespace Renegadeware.LL_SFMOS {
 
             if(iconImage) {
                 iconImage.sprite = card.icon;
-                iconImage.SetNativeSize();
+                //iconImage.SetNativeSize();
             }
 
             if(nameLabel)

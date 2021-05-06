@@ -17,12 +17,25 @@ namespace Renegadeware.LL_SFMOS {
             public bool isFilled { get { return slot.isFilled; } }
             public bool isTransitionBusy { get { return transition.isPlaying; } }
 
+            public bool isHighlight { get { return slot.highlight; } set { slot.highlight = value; } }
+
+            public bool IsMatch(CardData cardData) {
+                return slot.cardWidget.cardData == cardData;
+            }
+
             public void Fill(CardData cardData) {
-                slot.SetCard(cardData);
+                if(cardData != null)
+                    slot.SetCard(cardData);
+                else
+                    slot.Begin();
             }
 
             public void Hide() {
                 transition.gameObject.SetActive(false);
+            }
+
+            public void Error() {
+                slot.Error();
             }
 
             public void Enter() {
@@ -121,7 +134,7 @@ namespace Renegadeware.LL_SFMOS {
 
                 //fail-safe: fewer slots than before
                 for(int j = mSlotCount; j < slots.Length; j++)
-                    slots[j].Exit();
+                    slots[j].Hide();
 
                 //wait for slots to be filled
                 mCurScore = 0;
@@ -191,28 +204,41 @@ namespace Renegadeware.LL_SFMOS {
         }
 
         void OnCardDrag(CardWidget cardWidget, PointerEventData pointerEventData) {
+            SlotClearHighlights();
+
+            var hit = pointerEventData.pointerCurrentRaycast;
+
             //highlight slot if pointer is inside
+            if(hit.isValid && hit.gameObject) {
+                var slot = GetSlot(hit.gameObject);
+                if(slot != null)
+                    slot.isHighlight = true;
+            }   
         }
 
         void OnCardDragEnd(CardWidget cardWidget, PointerEventData pointerEventData) {
+            SlotClearHighlights();
+
+            SlotInfo slot = null;
+
             //check if pointer is in slot
-            bool isDropped = false;
+            var hit = pointerEventData.pointerCurrentRaycast;
+            if(hit.isValid && hit.gameObject)
+                slot = GetSlot(hit.gameObject);
 
-            if(isDropped) {
-                //matching card data?
-                bool isMatch = false;
-
-                if(isMatch) {
-                    //fill slot
+            if(slot != null && !slot.isFilled) {
+                //can we fill it?
+                if(CanFill(cardWidget.cardData)) {
+                    //fill slot and remove from deck
+                    slot.Fill(cardWidget.cardData);
 
                     deckWidget.Remove(cardWidget);
 
                     mCurScore += GameData.instance.GetScore(mErrorCount, mSlotCount > 1);
-
                     mErrorCount = 0;
                 }
-                else {
-                    //slot error animate
+                else { //error
+                    slot.Error();
 
                     cardWidget.Return();
 
@@ -257,6 +283,34 @@ namespace Renegadeware.LL_SFMOS {
             resultDialogEndGO.SetActive(false);
             resultInteractGO.SetActive(false);
             resultDialogTransition.gameObject.SetActive(false);
+        }
+
+        private SlotInfo GetSlot(GameObject go) {
+            for(int i = 0; i < mSlotCount; i++) {
+                if(slots[i].slot.gameObject == go)
+                    return slots[i];
+            }
+
+            return null;
+        }
+
+        private bool CanFill(CardData card) {
+            //check if already filled
+            for(int i = 0; i < mSlotCount; i++) {
+                if(slots[i].IsMatch(card))
+                    return false;
+            }
+
+            if(mQuestion == null)
+                return false;
+
+            //check if match answer
+            return mQuestion.IsAnswerMatch(card);
+        }
+
+        private void SlotClearHighlights() {
+            for(int i = 0; i < mSlotCount; i++)
+                slots[i].isHighlight = false;
         }
 
         private bool IsSlotsFilled() {
