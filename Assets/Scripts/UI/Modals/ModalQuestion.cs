@@ -39,12 +39,12 @@ namespace Renegadeware.LL_SFMOS {
             }
 
             public void Enter() {
+                slot.Begin();
+
                 if(!transition.gameObject.activeSelf) {
                     transition.gameObject.SetActive(true);
                     transition.PlayEnter();
                 }
-
-                slot.Begin();
             }
 
             public void Exit() {
@@ -159,25 +159,29 @@ namespace Renegadeware.LL_SFMOS {
                 questionDialogEndGO.SetActive(false);
                 questionDialogTransition.gameObject.SetActive(false);
 
-                //result
-                yield return DoDialogEnter(resultDialog, resultDialogTransition, mQuestion.resultTextRef);
+                if(!string.IsNullOrEmpty(mQuestion.resultTextRef)) {
+                    //result
+                    yield return DoDialogEnter(resultDialog, resultDialogTransition, mQuestion.resultTextRef);
 
-                //wait for result click
-                mIsResultDone = false;
+                    //wait for result click
+                    mIsResultDone = false;
 
-                resultInteractGO.SetActive(true);
+                    resultInteractGO.SetActive(true);
 
-                while(!mIsResultDone)
-                    yield return null;
+                    while(!mIsResultDone)
+                        yield return null;
 
-                resultInteractGO.SetActive(false);
+                    resultInteractGO.SetActive(false);
 
-                //hide result dialog
-                yield return resultDialogTransition.PlayExitWait();
+                    //hide result dialog
+                    yield return resultDialogTransition.PlayExitWait();
 
-                resultDialog.gameObject.SetActive(false);
-                resultDialogEndGO.SetActive(false);                
-                resultDialogTransition.gameObject.SetActive(false);
+                    resultDialog.gameObject.SetActive(false);
+                    resultDialogEndGO.SetActive(false);
+                    resultDialogTransition.gameObject.SetActive(false);
+                }
+                else
+                    yield return new WaitForSeconds(0.5f);
             }
 
             //hide slots
@@ -219,34 +223,36 @@ namespace Renegadeware.LL_SFMOS {
         void OnCardDragEnd(CardWidget cardWidget, PointerEventData pointerEventData) {
             SlotClearHighlights();
 
-            SlotInfo slot = null;
-
             //check if pointer is in slot
-            var hit = pointerEventData.pointerCurrentRaycast;
-            if(hit.isValid && hit.gameObject)
-                slot = GetSlot(hit.gameObject);
+            if(pointerEventData != null) {
+                SlotInfo slot = null;
 
-            if(slot != null && !slot.isFilled) {
-                //can we fill it?
-                if(CanFill(cardWidget.cardData)) {
-                    //fill slot and remove from deck
-                    slot.Fill(cardWidget.cardData);
+                var hit = pointerEventData.pointerCurrentRaycast;
+                if(hit.isValid && hit.gameObject)
+                    slot = GetSlot(hit.gameObject);
 
-                    deckWidget.Remove(cardWidget);
+                if(slot != null && !slot.isFilled) {
+                    //can we fill it?
+                    if(CanFill(cardWidget.cardData)) {
+                        //fill slot and remove from deck
+                        slot.Fill(cardWidget.cardData);
 
-                    mCurScore += GameData.instance.GetScore(mErrorCount, mSlotCount > 1);
-                    mErrorCount = 0;
+                        deckWidget.Remove(cardWidget);
+
+                        mCurScore += GameData.instance.GetScore(mErrorCount, mSlotCount > 1);
+                        mErrorCount = 0;
+                    }
+                    else { //error
+                        slot.Error();
+
+                        cardWidget.Return();
+
+                        mErrorCount++;
+                    }
                 }
-                else { //error
-                    slot.Error();
-
+                else
                     cardWidget.Return();
-
-                    mErrorCount++;
-                }
             }
-            else
-                cardWidget.Return();
         }
 
         void OnQuestionTextEnd() {
@@ -258,7 +264,7 @@ namespace Renegadeware.LL_SFMOS {
         }
 
         IEnumerator DoDialogEnter(M8.TextMeshPro.TextMeshProTypewriter dialog, AnimatorEnterExit transition, string textRef) {
-            dialog.gameObject.SetActive(true);
+            transition.gameObject.SetActive(true);
 
             yield return transition.PlayEnterWait();
 

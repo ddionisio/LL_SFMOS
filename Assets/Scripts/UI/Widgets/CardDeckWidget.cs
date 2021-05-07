@@ -27,7 +27,11 @@ namespace Renegadeware.LL_SFMOS {
         }
 
         public void Remove(CardWidget cardWidget) {
-
+            if(mCardActives.Remove(cardWidget)) {
+                cardWidget.Reset();
+                cardWidget.gameObject.SetActive(false);
+                mCardCache.Add(cardWidget);
+            }
         }
 
         public void Clear() {

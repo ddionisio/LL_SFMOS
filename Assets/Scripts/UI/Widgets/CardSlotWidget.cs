@@ -64,7 +64,7 @@ namespace Renegadeware.LL_SFMOS {
                     mTakeErrorInd = animator.GetTakeIndex(takeError);
 
                 if(!string.IsNullOrEmpty(takeAccept))
-                    mTakeErrorInd = animator.GetTakeIndex(takeAccept);
+                    mTakeAcceptInd = animator.GetTakeIndex(takeAccept);
             }
 
             cardWidget.gameObject.SetActive(false);

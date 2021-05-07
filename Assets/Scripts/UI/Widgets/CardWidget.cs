@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Renegadeware.LL_SFMOS {
-    public class CardWidget : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler {
+    public class CardWidget : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler {
         [Header("Display")]
         public Image iconImage;
         public TMP_Text nameLabel;
@@ -125,6 +125,15 @@ namespace Renegadeware.LL_SFMOS {
         void IPointerDownHandler.OnPointerDown(PointerEventData eventData) {
             if(mTakePointerDown != -1)
                 animator.Play(mTakePointerDown);
+        }
+
+        void IPointerUpHandler.OnPointerUp(PointerEventData eventData) {
+            if(!isDragging) {
+                if(mTakePointerDown != -1) {
+                    animator.Stop();
+                    animator.ResetTake(mTakePointerDown);
+                }
+            }
         }
 
         void IBeginDragHandler.OnBeginDrag(PointerEventData eventData) {

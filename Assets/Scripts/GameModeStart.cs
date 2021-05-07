@@ -78,7 +78,8 @@ namespace Renegadeware.LL_SFMOS {
 
             if (continueRootGO) continueRootGO.SetActive(LoLManager.instance.curProgress > 0);
 
-            yield return readyAnimator.PlayWait(readyTakeEnter);
+            if(readyAnimator)
+                yield return readyAnimator.PlayWait(readyTakeEnter);
         }
 
         void OnPlayNew() {
@@ -97,7 +98,8 @@ namespace Renegadeware.LL_SFMOS {
         }
 
         IEnumerator DoPlay(bool isRestart) {
-            yield return readyAnimator.PlayWait(readyTakeExit);
+            if(readyAnimator)
+                yield return readyAnimator.PlayWait(readyTakeExit);
 
             if (readyGO) readyGO.SetActive(false);
 
@@ -114,6 +116,10 @@ namespace Renegadeware.LL_SFMOS {
             else //continue
                 GameData.instance.Begin(false);
 
+            do {
+                yield return null;
+            } while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion));
+
             //single questions
             if(lolMgr.curProgress < gameDat.singleQuestionCount) {
                 mModalParms[ModalQuestion.parmCount] = gameDat.singleQuestionCount;
@@ -121,23 +127,27 @@ namespace Renegadeware.LL_SFMOS {
                 M8.ModalManager.main.Open(gameDat.modalQuestion, mModalParms);
 
                 //wait for questions to be done
-                while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion))
+                do {
                     yield return null;
+                } while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion));
             }
 
             //double questions intro
             if(lolMgr.curProgress == gameDat.singleQuestionCount) {
-                
+                //explain double questions
             }
 
             //double questions
-            mModalParms[ModalQuestion.parmCount] = gameDat.doubleQuestionCount;
+            if(lolMgr.curProgress < gameDat.singleQuestionCount + gameDat.doubleQuestionCount) {
+                mModalParms[ModalQuestion.parmCount] = gameDat.doubleQuestionCount;
 
-            M8.ModalManager.main.Open(gameDat.modalQuestion, mModalParms);
+                M8.ModalManager.main.Open(gameDat.modalQuestion, mModalParms);
 
-            //wait for questions to be done
-            while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion))
-                yield return null;
+                //wait for questions to be done
+                do {
+                    yield return null;
+                } while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion));
+            }
 
             //end
         }

@@ -36,6 +36,11 @@ namespace Renegadeware.LL_SFMOS {
             }
         }
 
+        public struct QuestionPair {
+            public Question q1;
+            public Question q2;
+        }
+
         [Header("Modals")]
         public string modalQuestion = "question";
 
@@ -103,14 +108,55 @@ namespace Renegadeware.LL_SFMOS {
             //generate shuffled questions
             var questionList = new List<Question>(singleQuestionCount + doubleQuestionCount);
 
-            var singleQuestionShuffle = new Question[singleQuestions.Length];
-            System.Array.Copy(singleQuestions, singleQuestionShuffle, singleQuestionShuffle.Length);
-            M8.ArrayUtil.Shuffle(singleQuestionShuffle);
+            //single questions, pair with system and organ
+            int qInd;
 
-            int singleQuestionShuffleCount = Mathf.Min(singleQuestionShuffle.Length, singleQuestionCount);
-            for(int i = 0; i < singleQuestionShuffleCount; i++)
-                questionList.Add(singleQuestionShuffle[i]);
+            var questionPairs = new QuestionPair[singleQuestions.Length / 2];
+            for(int i = 0; i < questionPairs.Length; i++) {
+                qInd = i * 2;
 
+                if(qInd < singleQuestions.Length) {
+                    if(qInd + 1 < singleQuestions.Length)
+                        questionPairs[i] = new QuestionPair { q1 = singleQuestions[i * 2], q2 = singleQuestions[i * 2 + 1] };
+                    else
+                        questionPairs[i] = new QuestionPair { q1 = singleQuestions[i * 2], q2 = null };
+                }
+                else
+                    questionPairs[i] = new QuestionPair { q1 = null, q2 = null };
+            }
+
+            M8.ArrayUtil.Shuffle(questionPairs);
+
+            var questions1 = new Question[questionPairs.Length];
+            var questions2 = new Question[questionPairs.Length];
+
+            for(int i = 0; i < questionPairs.Length; i++) {
+                questions1[i] = questionPairs[i].q1;
+                questions2[i] = questionPairs[i].q2;
+            }
+
+            M8.ArrayUtil.Shuffle(questions1);
+            M8.ArrayUtil.Shuffle(questions2);
+
+            qInd = 0;
+
+            for(int i = 0; i < singleQuestionCount; i++) {
+                if(qInd >= questions1.Length) //fail-safe
+                    break;
+
+                if(i % 2 == 0) {
+                    if(questions1[qInd] != null)
+                        questionList.Add(questions1[qInd]);
+                }
+                else {
+                    if(questions2[qInd] != null)
+                        questionList.Add(questions2[qInd]);
+
+                    qInd++;
+                }
+            }
+
+            //double questions, simply shuffle
             var doubleQuestionShuffle = new Question[doubleQuestions.Length];
             System.Array.Copy(doubleQuestions, doubleQuestionShuffle, doubleQuestionShuffle.Length);
             M8.ArrayUtil.Shuffle(doubleQuestionShuffle);
