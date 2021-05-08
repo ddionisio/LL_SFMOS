@@ -1,13 +1,7 @@
 fileFormatVersion: 2
-guid: 49d782ef45be5004b9edb429ea0994ce
+guid: 293c6061f893fa046a16aaa68e13d9d9
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: -1174144582593101571
-    second: circle128x128
-  - first:
-      213: -1272029043503466184
-    second: circle128x128_capsule
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -37,7 +31,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: -1
+    filterMode: 0
     aniso: -1
     mipBias: -100
     wrapU: 1
@@ -52,7 +46,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
-  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteBorder: {x: 5, y: 5, z: 5, w: 5}
   spriteGenerateFallbackPhysicsShape: 0
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -63,7 +57,7 @@ TextureImporter:
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
-  applyGammaDecoding: 1
+  applyGammaDecoding: 0
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -101,95 +95,9 @@ TextureImporter:
     overridden: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 3
-    buildTarget: Android
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: circle128x128
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 128
-        height: 128
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline:
-      - - {x: -39, y: 55}
-        - {x: -54, y: 40}
-        - {x: -64, y: 21}
-        - {x: -64, y: -21}
-        - {x: -54, y: -40}
-        - {x: -37, y: -56}
-        - {x: -16, y: -64}
-        - {x: 16, y: -64}
-        - {x: 38, y: -56}
-        - {x: 55, y: -40}
-        - {x: 64, y: -22}
-        - {x: 64, y: 18}
-        - {x: 54, y: 40}
-        - {x: 37, y: 56}
-        - {x: 16, y: 64}
-        - {x: -18, y: 64}
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: df0c69719b994bfe0800000000000000
-      internalID: -1174144582593101571
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: circle128x128_capsule
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 128
-        height: 128
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 63, z: 0, w: 63}
-      outline:
-      - - {x: -20, y: 64}
-        - {x: -39, y: 55}
-        - {x: -57, y: 36}
-        - {x: -64, y: 14}
-        - {x: -64, y: -16}
-        - {x: -55, y: -37}
-        - {x: -36, y: -56}
-        - {x: -20, y: -64}
-        - {x: 19, y: -64}
-        - {x: 37, y: -55}
-        - {x: 56, y: -36}
-        - {x: 64, y: -17}
-        - {x: 64, y: 13}
-        - {x: 56, y: 37}
-        - {x: 35, y: 57}
-        - {x: 17, y: 64}
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 839fefd0358d85ee0800000000000000
-      internalID: -1272029043503466184
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     physicsShape: []
     bones: []

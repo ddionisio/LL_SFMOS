@@ -118,7 +118,9 @@ namespace Renegadeware.LL_SFMOS {
 
             do {
                 yield return null;
-            } while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion));
+            } while(M8.ModalManager.main.isBusy);
+
+            HUD.instance.ScoreEnter();
 
             //single questions
             if(lolMgr.curProgress < gameDat.singleQuestionCount) {
@@ -148,6 +150,8 @@ namespace Renegadeware.LL_SFMOS {
                     yield return null;
                 } while(M8.ModalManager.main.isBusy || M8.ModalManager.main.IsInStack(gameDat.modalQuestion));
             }
+
+            HUD.instance.ScoreExit();
 
             //end
         }
