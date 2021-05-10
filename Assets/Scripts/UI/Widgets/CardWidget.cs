@@ -24,6 +24,10 @@ namespace Renegadeware.LL_SFMOS {
         [M8.Animator.TakeSelector(animatorField = "animator")]
         public string takeDrag;
 
+        [Header("SFX")]
+        [M8.SoundPlaylist]
+        public string sfxTap;
+
         public CardData cardData { get; private set; }
 
         public bool isDragging { get; private set; }
@@ -123,8 +127,14 @@ namespace Renegadeware.LL_SFMOS {
         }
 
         void IPointerDownHandler.OnPointerDown(PointerEventData eventData) {
+            if(!string.IsNullOrEmpty(sfxTap))
+                M8.SoundPlaylist.instance.Play(sfxTap, false);
+
             if(mTakePointerDown != -1)
                 animator.Play(mTakePointerDown);
+
+            if(LoLExt.LoLManager.isInstantiated)
+                LoLExt.LoLManager.instance.SpeakText(cardData.nameRef);
         }
 
         void IPointerUpHandler.OnPointerUp(PointerEventData eventData) {

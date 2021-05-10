@@ -7,6 +7,7 @@ using LoLExt;
 
 namespace Renegadeware.LL_SFMOS {
     public class ModalQuestion : M8.ModalController, M8.IModalPush {
+        public const string parmCurIndex = "i";
         public const string parmCount = "c";
 
         [System.Serializable]
@@ -73,6 +74,12 @@ namespace Renegadeware.LL_SFMOS {
         public GameObject resultInteractGO;
         public AnimatorEnterExit resultDialogTransition;
 
+        [Header("SFX")]
+        [M8.SoundPlaylist]
+        public string sfxCorrect;
+        [M8.SoundPlaylist]
+        public string sfxWrong;
+
         private CardData[] mAnswers;
 
         private GameData.Question mQuestion;
@@ -93,21 +100,25 @@ namespace Renegadeware.LL_SFMOS {
         void M8.IModalPush.Push(M8.GenericParams parms) {
             HideAll();
 
+            int startIndex = 0;
             int count = 0;
 
             if(parms != null) {
+                if(parms.ContainsKey(parmCurIndex))
+                    startIndex = parms.GetValue<int>(parmCurIndex);
+
                 if(parms.ContainsKey(parmCount))
                     count = parms.GetValue<int>(parmCount);
             }
 
-            StartCoroutine(DoQuestionSequence(count));
+            StartCoroutine(DoQuestionSequence(startIndex, count));
         }
 
-        IEnumerator DoQuestionSequence(int count) {
+        IEnumerator DoQuestionSequence(int startIndex, int count) {
             var lolMgr = LoLManager.instance;
             var gameDat = GameData.instance;
 
-            for(int i = 0; i < count; i++) {
+            for(int i = startIndex; i < count; i++) {
                 if(lolMgr.curProgress >= lolMgr.progressMax) //completed
                     break;
 
@@ -116,6 +127,8 @@ namespace Renegadeware.LL_SFMOS {
                     break;
 
                 mSlotCount = mQuestion.answers.Length;
+
+                if(gameDat.signalQuestion) gameDat.signalQuestion.Invoke();
 
                 //question dialog
                 StartCoroutine(DoDialogEnter(questionDialog, questionDialogTransition, mQuestion.questionTextRef));
@@ -160,6 +173,8 @@ namespace Renegadeware.LL_SFMOS {
                 questionDialogTransition.gameObject.SetActive(false);
 
                 if(!string.IsNullOrEmpty(mQuestion.resultTextRef)) {
+                    if(gameDat.signalResult) gameDat.signalResult.Invoke();
+
                     //result
                     yield return DoDialogEnter(resultDialog, resultDialogTransition, mQuestion.resultTextRef);
 
@@ -181,7 +196,7 @@ namespace Renegadeware.LL_SFMOS {
                     resultDialogTransition.gameObject.SetActive(false);
                 }
                 else
-                    yield return new WaitForSeconds(0.5f);
+                    yield return new WaitForSeconds(1.0f);
             }
 
             //hide slots
@@ -234,6 +249,9 @@ namespace Renegadeware.LL_SFMOS {
                 if(slot != null && !slot.isFilled) {
                     //can we fill it?
                     if(CanFill(cardWidget.cardData)) {
+                        if(!string.IsNullOrEmpty(sfxCorrect))
+                            M8.SoundPlaylist.instance.Play(sfxCorrect, false);
+
                         //fill slot and remove from deck
                         slot.Fill(cardWidget.cardData);
 
@@ -243,6 +261,9 @@ namespace Renegadeware.LL_SFMOS {
                         mErrorCount = 0;
                     }
                     else { //error
+                        if(!string.IsNullOrEmpty(sfxWrong))
+                            M8.SoundPlaylist.instance.Play(sfxWrong, false);
+
                         slot.Error();
 
                         cardWidget.Return();

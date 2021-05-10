@@ -59,6 +59,10 @@ namespace Renegadeware.LL_SFMOS {
         public int doubleQuestionCount = 3;
         public Question[] doubleQuestions;
 
+        [Header("Signals")]
+        public M8.Signal signalQuestion;
+        public M8.Signal signalResult;
+
         public bool isGameStarted { get; private set; } //true: we got through start normally, false: debug
 
         public int maxScore { get { return (scoreSingle * singleQuestionCount) + (scoreSingle * doubleQuestionCount * 4); } } //double score per answer
