@@ -52,13 +52,15 @@ namespace Renegadeware.LL_SFMOS {
         public void Setup(CardData card, Transform dragArea) {
             cardData = card;
 
-            if(iconImage) {
-                iconImage.sprite = card.icon;
-                //iconImage.SetNativeSize();
-            }
+            if(card) {
+                if(iconImage) {
+                    iconImage.sprite = card.icon;
+                    //iconImage.SetNativeSize();
+                }
 
-            if(nameLabel)
-                nameLabel.text = M8.Localize.Get(card.nameRef);
+                if(nameLabel)
+                    nameLabel.text = M8.Localize.Get(card.nameRef);
+            }
 
             mDragArea = dragArea;
         }

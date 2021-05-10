@@ -31,6 +31,7 @@ namespace Renegadeware.LL_SFMOS {
         private int mTakeAcceptInd = -1;
 
         public void Begin() {
+            cardWidget.Setup(null, null);
             cardWidget.gameObject.SetActive(false);
             highlightGO.SetActive(false);
 
