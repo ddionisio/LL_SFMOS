@@ -6,8 +6,10 @@
     resolution,
     sdkVersion
   ) {
-    const targetGameObject = Pointer_stringify(callbackObject);
+    const targetGameObject = UTF8ToString(callbackObject);
     console.log('GameIsReady() from JS');
+    console.log('Game Name: ' + UTF8ToString(gameName));
+    console.log('LoL UNITY SDK version: ' + UTF8ToString(sdkVersion));
     console.log('Sending data to GameObject' + targetGameObject);
 
     const EVENT = {
@@ -134,7 +136,7 @@
         payload: JSON.stringify({
           aspectRatio: aspectRatio,
           resolution: resolution,
-          sdkVersion: sdkVersion,
+          sdkVersion: UTF8ToString(sdkVersion),
         }),
       },
       '*'
@@ -153,8 +155,8 @@
   },
 
   _PostWindowMessage: function(_messageName, _jsonPayload) {
-    const messageName = Pointer_stringify(_messageName);
-    const jsonPayload = Pointer_stringify(_jsonPayload);
+    const messageName = UTF8ToString(_messageName);
+    const jsonPayload = UTF8ToString(_jsonPayload);
     const payload = {
       message: messageName,
       payload: jsonPayload,

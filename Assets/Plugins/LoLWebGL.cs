@@ -15,19 +15,25 @@ Version 2.0.0 RC-10
 namespace LoLSDK
 {
 #if UNITY_EDITOR
-    public interface ILOLSDK_EDITOR : ILOLSDK
+    public interface ILOLSDK_EDITOR : ILOLSDK_EXTENSION
     {
         void SpeakText (string text, Action<AudioClip> onDownloaded, MonoBehaviour owner, string currentLang = "en", string currentTTSLangKey = "en-US");
     }
 #endif
 
-    public class WebGL : ILOLSDK
+    // Needed because original source for V5 dll is missing... 
+    public interface ILOLSDK_EXTENSION : ILOLSDK
+    {
+        void CancelSpeakText();
+    }
+
+    public class WebGL : ILOLSDK_EXTENSION
     {
         // *************************************
         // PLUMBING
         // *************************************
 
-        public const string SDK_VERSION = "5.1";
+        public const string SDK_VERSION = "5.4";
 
         [DllImport("__Internal")]
         public static extern void _PostWindowMessage(string msgName, string jsonPayload);
@@ -106,6 +112,16 @@ namespace LoLSDK
             };
 
             PostWindowMessage("speakText", payload.ToString());
+        }
+
+        /// <summary>
+        /// Will force tts cancel.
+        /// SpeakText will auto cancel but this is useful if you are changing scenes / panels
+        /// and the player may have tts running from a previous text entry.
+        /// </summary>
+        public void CancelSpeakText()
+        {
+            PostWindowMessage("speakTextCancel", "{}");
         }
 
         public void SpeakQuestion(int questionId)
@@ -289,6 +305,11 @@ namespace LoLSDK
         public void SpeakText(string key)
         {
             Debug.Log("SpeakText");
+        }
+
+        public void CancelSpeakText()
+        {
+            Debug.Log("Cancel SpeakText. NOTE: Will not cancel editor testing SpeakText.");
         }
 
         Coroutine pollyTTSRequest;

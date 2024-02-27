@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.IO.Compression;
 using SimpleJSON;
 using UnityEditor;
 using UnityEditor.Build;
@@ -32,7 +33,7 @@ namespace LoL.Editor
             var sdkVersionFieldInfo = typeof(LoLSDK.WebGL).GetField("SDK_VERSION");
             var lolSdkVersion = sdkVersionFieldInfo == null
                 ? manuallyAddVersionMsg
-                : (string) sdkVersionFieldInfo.GetValue(null);
+                : (string)sdkVersionFieldInfo.GetValue(null);
 
             var spec = new JSONObject
             {
@@ -64,6 +65,7 @@ namespace LoL.Editor
 
             AddSpecToBuild(report.summary.outputPath);
         }
+
 #else
         public void OnPostprocessBuild (BuildTarget target, string path)
         {
@@ -87,7 +89,7 @@ namespace LoL.Editor
                     lol_sdk_version));
             }
 
-            var lolSdkVersion = (string) typeof(LoLSDK.WebGL).GetField("SDK_VERSION")?.GetValue(null);
+            var lolSdkVersion = (string)typeof(LoLSDK.WebGL).GetField("SDK_VERSION")?.GetValue(null);
             var upgradedEditorOrSDK = false;
             if (spec["unity_version"] != Application.unityVersion)
             {
@@ -111,23 +113,60 @@ namespace LoL.Editor
             // Remove streaming assets lol spec from build.
             File.Delete(buildPath + "/StreamingAssets/" + lolSpecFilename);
 
-            spec.Add("build_dir_size", GetDirectorySize(buildPath + "/Build"));
-            spec.Add("streaming_assets_dir_size", GetDirectorySize(buildPath + "/StreamingAssets"));
+            var (size, uncompressed) = GetDirectorySize(buildPath + "/Build");
+            spec.Add("build_dir_size", size);
+            spec.Add("build_uncompressed_dir_size", uncompressed);
+            spec.Add("build_compression_format", PlayerSettings.WebGL.compressionFormat.ToString());
+
+            spec.Add("streaming_assets_dir_size", GetDirectorySize(buildPath + "/StreamingAssets").size);
 
             File.WriteAllText(buildPath + "/" + lolSpecFilename, spec.ToString(4));
         }
 
-        long GetDirectorySize (string directoryPath)
+        (long size, long uncompressed) GetDirectorySize (string directoryPath)
         {
             var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
 
             long length = 0;
+            long rawLength = 0;
             foreach (string name in files)
             {
                 FileInfo info = new FileInfo(name);
-                length += info.Length;
+                var (size, uncompressed) = GetFileSize(info);
+                length += size;
+                rawLength += uncompressed;
             }
-            return length;
+            return (length, rawLength);
+        }
+
+        (long size, long uncompressed) GetFileSize (FileInfo fileInfo)
+        {
+            if ((fileInfo.Name.EndsWith(".gz") || fileInfo.Name.EndsWith(".unityweb")) && PlayerSettings.WebGL.compressionFormat == WebGLCompressionFormat.Gzip)
+                return (fileInfo.Length, GetGzOriginalFileSize(fileInfo));
+
+            if ((fileInfo.Name.EndsWith(".br") || fileInfo.Name.EndsWith(".unityweb")) && PlayerSettings.WebGL.compressionFormat == WebGLCompressionFormat.Brotli)
+                return (fileInfo.Length, GetBrotliOriginalSize(fileInfo));
+
+            return (fileInfo.Length, fileInfo.Length);
+        }
+
+        long GetBrotliOriginalSize (FileInfo fileInfo)
+        {
+            using var zipStream = new BrotliStream(fileInfo.OpenRead(), CompressionMode.Decompress);
+            return StreamToLength(zipStream);
+        }
+
+        long GetGzOriginalFileSize (FileInfo fileInfo)
+        {
+            using var zipStream = new GZipStream(fileInfo.OpenRead(), CompressionMode.Decompress);
+            return StreamToLength(zipStream);
+        }
+
+        long StreamToLength (Stream stream)
+        {
+            using var resultStream = new MemoryStream();
+            stream.CopyTo(resultStream);
+            return resultStream.ToArray().Length;
         }
     }
 }

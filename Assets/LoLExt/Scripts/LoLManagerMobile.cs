@@ -12,7 +12,7 @@ namespace LoLExt {
         //public override bool isAutoSpeechEnabled { get { return false; } }
 
         protected override IEnumerator Start() {
-            Screen.orientation = ScreenOrientation.Landscape;
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
 
             /*mLangCode = "en";
             mCurProgress = 0;

@@ -6,12 +6,44 @@
     <title>Legends of Learning | LL_SFMOS</title>
     <link rel="stylesheet" href="https://game-cdn.legendsoflearning.com/assets/lol.css" />
     <script src="https://game-cdn.legendsoflearning.com/assets/lol.js"></script>
-    <script src="Build/UnityLoader.js"></script>
-    <script>
-      var gameInstance = UnityLoader.instantiate("gameContainer", "Build/BuildWebGL.json");
-    </script>
   </head>
   <body>
-    <div id="gameContainer" style="width: 1024px; height: 576px; margin: auto"></div>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas"></canvas>
+    </div>
+    <script>
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/BuildWebGL.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/BuildWebGL.data.gz",
+        frameworkUrl: buildUrl + "/BuildWebGL.framework.js.gz",
+        codeUrl: buildUrl + "/BuildWebGL.wasm.gz",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "Renegadeware",
+        productName: "LL_SFMOS",
+        productVersion: "2.0.1",
+      };
+
+      var container = document.querySelector("#unity-container");
+      var canvas = document.querySelector("#unity-canvas");
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        container.className = "unity-mobile";
+        config.devicePixelRatio = 1;
+      } else {
+        canvas.style.width = "1024px";
+        canvas.style.height = "576px";
+      }
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+        }).then((unityInstance) => {
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+    </script>
   </body>
 </html>
